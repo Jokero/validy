@@ -1,7 +1,3 @@
-/**
- * todo:
- * 1) переименовать config в schema
- */
 const validate   = require('./lib/validate');
 const validators = require('./lib/validators');
 
