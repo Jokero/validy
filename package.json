@@ -1,6 +1,6 @@
 {
-    "name":        "validate",
-    "description": "@todo",
+    "name":        "validy",
+    "description": "Nested objects validation with support of async validators",
     "version":     "0.0.1",
 
     "author": {
@@ -10,13 +10,16 @@
 
     "repository": {
         "type": "git",
-        "url":  "https://github.com/Jokero/validate.git"
+        "url":  "https://github.com/Jokero/validy.git"
     },
 
     "license": "MIT",
 
     "keywords": [
-        "@todo"
+        "validation",
+        "validate",
+        "validator",
+        "schema"
     ],
 
     "engines": {
@@ -29,13 +32,14 @@
         "babelify":            "7.3.0",
         "uglify-js":           "2.6.2",
         "chai":                "3.5.0",
+        "chai-as-promised":    "5.3.0",
         "mocha":               "2.4.5"
     },
 
     "scripts": {
         "test":       "mocha 'tests/**/*.js' --timeout 5000",
-        "browserify": "browserify index.js --transform [ babelify --presets es2015 ] --standalone validate --outfile dist/validate.js",
-        "minify":     "uglifyjs dist/validate.js --output dist/validate.min.js",
+        "browserify": "browserify index.js --transform [ babelify --presets es2015 ] --standalone validy --outfile dist/validy.js",
+        "minify":     "uglifyjs dist/validy.js --output dist/validy.min.js",
         "build":      "npm run browserify && npm run minify"
     }
 }
