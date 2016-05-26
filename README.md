@@ -44,7 +44,7 @@ You can use the module with AMD/CommonJS or just use `window.validy`.
 
 **Return value**
 
-(Object | Object[]) - Result of mapping (object or array of objects)
+(Promise) - Result of validation
 
 ## Build
 
