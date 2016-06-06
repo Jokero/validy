@@ -19,7 +19,9 @@
         "validation",
         "validate",
         "validator",
-        "schema"
+        "schema",
+        "nested",
+        "async"
     ],
 
     "engines": {
