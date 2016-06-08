@@ -1,6 +1,6 @@
 'use strict';
 
-var validators = require('./validators');
+const validators = require('./validators');
 
 /**
  * @param {*}        value
@@ -13,17 +13,17 @@ var validators = require('./validators');
  *
  * @returns {Promise}
  */
-module.exports = function (value, validatorsOptions, object, originalObject, path, options) {
-    var validatorsResultsPromises = [];
-    var validationErrors = [];
+module.exports = function(value, validatorsOptions, object, originalObject, path, options) {
+    const validatorsResultsPromises = [];
+    const validationErrors          = [];
 
-    Object.keys(validatorsOptions).forEach(function (validatorName) {
-        var validator = validators[validatorName];
+    Object.keys(validatorsOptions).forEach(validatorName => {
+        const validator = validators[validatorName];
         if (!validator) {
             throw new Error('Unknown validator ' + validatorName);
         }
 
-        var validatorOptions = validatorsOptions[validatorName];
+        let validatorOptions = validatorsOptions[validatorName];
         if (validatorOptions instanceof Function) {
             validatorOptions = validatorOptions(value, object, originalObject, path);
         }
@@ -32,10 +32,10 @@ module.exports = function (value, validatorsOptions, object, originalObject, pat
             return;
         }
 
-        var validatorResult = validator.call(validator, value, validatorOptions, object, originalObject, path);
-
-        var validatorResultPromise = Promise.resolve(validatorResult);
-        validatorResultPromise.then(function (validationError) {
+        const validatorResult = validator.call(validator, value, validatorOptions, object, originalObject, path);
+        
+        const validatorResultPromise = Promise.resolve(validatorResult);
+        validatorResultPromise.then(validationError => {
             if (validationError) {
                 validationErrors.push(validationError);
             }
@@ -44,12 +44,12 @@ module.exports = function (value, validatorsOptions, object, originalObject, pat
         validatorsResultsPromises.push(validatorResultPromise);
     });
 
-    return Promise.all(validatorsResultsPromises).then(function () {
+    return Promise.all(validatorsResultsPromises).then(() => {
         if (validationErrors.length) {
             if (options.maxPropertyErrorsCount) {
                 return validationErrors.slice(0, options.maxPropertyErrorsCount);
             }
-
+            
             return validationErrors;
         }
     });

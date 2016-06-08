@@ -1,20 +1,8 @@
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.validy = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 'use strict';
 
-var validate = require('./lib/validate');
-
-validate.validators = require('./lib/validators');
-validate.formatters = require('./lib/formatters');
-validate.errors = require('./lib/errors');
-
-module.exports = validate;
-
-},{"./lib/errors":2,"./lib/formatters":5,"./lib/validate":7,"./lib/validators":11}],2:[function(require,module,exports){
-'use strict';
-
 exports.TimeoutError = require('./timeoutError');
-
-},{"./timeoutError":3}],3:[function(require,module,exports){
+},{"./timeoutError":2}],2:[function(require,module,exports){
 'use strict';
 
 var util = require('util');
@@ -24,19 +12,20 @@ var util = require('util');
  * 
  * @constructor
  */
-function TimeoutError(message) {
+function TimeoutError() {
+  var message = arguments.length <= 0 || arguments[0] === undefined ? 'Validation timeout' : arguments[0];
+
   Error.call(this);
   Error.captureStackTrace(this, this.constructor);
 
   this.name = this.constructor.name;
-  this.message = message || 'Validation timeout';
+  this.message = message;
 }
 
 util.inherits(TimeoutError, Error);
 
 module.exports = TimeoutError;
-
-},{"util":15}],4:[function(require,module,exports){
+},{"util":15}],3:[function(require,module,exports){
 'use strict';
 
 /**
@@ -47,9 +36,9 @@ module.exports = TimeoutError;
  * @returns {Object}
  */
 
-function flatten(object, path, flattenObject) {
-    path = path || '';
-    flattenObject = flattenObject || {};
+function flatten(object) {
+    var path = arguments.length <= 1 || arguments[1] === undefined ? '' : arguments[1];
+    var flattenObject = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
 
     Object.keys(object).forEach(function (propertyName) {
         var propertyValue = object[propertyName];
@@ -72,13 +61,11 @@ function flatten(object, path, flattenObject) {
 module.exports = function (object) {
     return flatten(object);
 };
-
-},{}],5:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
 'use strict';
 
 exports.flat = require('./flat');
-
-},{"./flat":4}],6:[function(require,module,exports){
+},{"./flat":3}],5:[function(require,module,exports){
 'use strict';
 
 /**
@@ -96,8 +83,7 @@ exports.hasSchemaAtLeastOneProperty = function (schema) {
 
     return false;
 };
-
-},{}],7:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 'use strict';
 
 var validateObject = require('./validateObject');
@@ -116,8 +102,8 @@ var DEFAULT_TIMEOUT = 10000;
  *
  * @returns {Promise}
  */
-module.exports = function (object, schema, options) {
-    options = options || {};
+module.exports = function (object, schema) {
+    var options = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
 
     return new Promise(function (resolve, reject) {
         var timeout = options.timeout || DEFAULT_TIMEOUT;
@@ -146,8 +132,7 @@ module.exports = function (object, schema, options) {
         });
     });
 };
-
-},{"./errors":2,"./formatters":5,"./validateObject":8}],8:[function(require,module,exports){
+},{"./errors":1,"./formatters":4,"./validateObject":7}],7:[function(require,module,exports){
 'use strict';
 
 var validateProperty = require('./validateProperty');
@@ -198,8 +183,7 @@ module.exports = function (object, schema, originalObject, path, options) {
         }
     });
 };
-
-},{"./validateProperty":9}],9:[function(require,module,exports){
+},{"./validateProperty":8}],8:[function(require,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
@@ -270,8 +254,7 @@ module.exports = function (value, schema, object, originalObject, path, options)
         }
     });
 };
-
-},{"./utils":6,"./validateObject":8,"./validateValue":10}],10:[function(require,module,exports){
+},{"./utils":5,"./validateObject":7,"./validateValue":9}],9:[function(require,module,exports){
 'use strict';
 
 var validators = require('./validators');
@@ -328,13 +311,21 @@ module.exports = function (value, validatorsOptions, object, originalObject, pat
         }
     });
 };
-
-},{"./validators":11}],11:[function(require,module,exports){
+},{"./validators":10}],10:[function(require,module,exports){
 'use strict';
 
 module.exports = {};
+},{}],11:[function(require,module,exports){
+'use strict';
 
-},{}],12:[function(require,module,exports){
+var validate = require('./validate');
+
+validate.validators = require('./validators');
+validate.formatters = require('./formatters');
+validate.errors = require('./errors');
+
+module.exports = validate;
+},{"./errors":1,"./formatters":4,"./validate":6,"./validators":10}],12:[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -1052,5 +1043,5 @@ function hasOwnProperty(obj, prop) {
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":14,"_process":13,"inherits":12}]},{},[1])(1)
+},{"./support/isBuffer":14,"_process":13,"inherits":12}]},{},[11])(11)
 });

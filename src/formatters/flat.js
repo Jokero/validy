@@ -7,13 +7,9 @@
  * 
  * @returns {Object}
  */
-
-function flatten(object) {
-    var path = arguments.length <= 1 || arguments[1] === undefined ? '' : arguments[1];
-    var flattenObject = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
-
-    Object.keys(object).forEach(function (propertyName) {
-        var propertyValue = object[propertyName];
+function flatten(object, path='', flattenObject={}) {
+    Object.keys(object).forEach(propertyName => {
+        const propertyValue = object[propertyName];
 
         if (propertyValue instanceof Array) {
             flattenObject[path + propertyName] = propertyValue;
@@ -30,6 +26,6 @@ function flatten(object) {
  * 
  * @returns {Object}
  */
-module.exports = function (object) {
+module.exports = function(object) {
     return flatten(object);
 };
