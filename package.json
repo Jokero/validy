@@ -1,55 +1,48 @@
 {
-    "name":        "validy",
-    "description": "Nested objects validation with support of async validators",
-    "version":     "0.0.1",
-
-    "author": {
-        "name":  "Dmitry Kirilyuk",
-        "email": "gk.joker@gmail.com"
-    },
-
-    "repository": {
-        "type": "git",
-        "url":  "https://github.com/Jokero/validy.git"
-    },
-
-    "license": "MIT",
-
-    "keywords": [
-        "validation",
-        "validate",
-        "validator",
-        "schema",
-        "nested",
-        "async"
-    ],
-
-    "engines": {
-        "node": ">=4.0.0"
-    },
-
-    "main": "./lib/validy.js",
-    "files": [
-        "dist/",
-        "lib/",
-        "LICENSE",
-        "README.md"
-    ],
-
-    "devDependencies": {
-        "babel-cli": "6.9.0",
-        "babel-preset-es2015": "6.9.0",
-        "browserify": "13.0.1",
-        "uglify-js": "2.6.2",
-        "chai": "3.5.0",
-        "chai-as-promised": "5.3.0",
-        "mocha": "2.4.5"
-    },
-    "scripts": {
-        "test": "mocha 'tests/**/*.js' --timeout 5000",
-        "babelify": "babel src --presets es2015 --out-dir lib",
-        "browserify": "browserify ./lib/validy.js --standalone validy --outfile dist/validy.js",
-        "minify": "uglifyjs dist/validy.js --output dist/validy.min.js",
-        "build": "npm run babelify && npm run browserify && npm run minify"
-    }
+  "name": "validy",
+  "description": "Nested objects validation with support of async validators",
+  "version": "0.0.2",
+  "author": {
+    "name": "Dmitry Kirilyuk",
+    "email": "gk.joker@gmail.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Jokero/validy.git"
+  },
+  "license": "MIT",
+  "keywords": [
+    "validation",
+    "validate",
+    "validator",
+    "schema",
+    "nested",
+    "async"
+  ],
+  "engines": {
+    "node": ">=4.0.0"
+  },
+  "main": "./lib/validy.js",
+  "files": [
+    "dist/",
+    "lib/",
+    "LICENSE",
+    "README.md"
+  ],
+  "devDependencies": {
+    "babel-cli": "6.9.0",
+    "babel-preset-es2015": "6.9.0",
+    "browserify": "13.0.1",
+    "uglify-js": "2.6.2",
+    "chai": "3.5.0",
+    "chai-as-promised": "5.3.0",
+    "mocha": "2.4.5"
+  },
+  "scripts": {
+    "test": "mocha 'tests/**/*.js' --timeout 5000",
+    "babelify": "babel src --presets es2015 --out-dir lib",
+    "browserify": "browserify ./lib/validy.js --standalone validy --outfile dist/validy.js",
+    "minify": "uglifyjs dist/validy.js --output dist/validy.min.js",
+    "build": "npm run babelify && npm run browserify && npm run minify"
+  }
 }
