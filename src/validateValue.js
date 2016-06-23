@@ -32,7 +32,7 @@ module.exports = function(value, validatorsOptions, object, originalObject, path
             return;
         }
 
-        const validatorResult = validator.call(validator, value, validatorOptions, object, originalObject, path);
+        const validatorResult = validator(value, validatorOptions, object, originalObject, path);
         
         const validatorResultPromise = Promise.resolve(validatorResult);
         validatorResultPromise.then(validationError => {
