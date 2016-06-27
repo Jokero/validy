@@ -1,3 +1,4 @@
 'use strict';
 
-exports.flat = require('./flat');
+exports.nested = require('./nested'); // default
+exports.flat   = require('./flat');
