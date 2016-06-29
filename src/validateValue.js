@@ -28,7 +28,7 @@ module.exports = function(value, validatorsOptions, object, originalObject, path
             validatorOptions = validatorOptions(value, object, originalObject, path);
         }
 
-        if (!validatorOptions) {
+        if (validatorOptions === false || validatorOptions === null || validatorOptions === undefined) {
             return;
         }
 

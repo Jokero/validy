@@ -112,8 +112,8 @@ var DEFAULT_TIMEOUT = 10000;
  * @param {Object} object
  * @param {Object} schema
  * @param {Object} [options={}]
- * @param {Number}   [options.timeout=10000]
  * @param {String}   [options.format=nested]
+ * @param {Number}   [options.timeout=10000]
  * @param {Number}   [options.maxPropertyErrorsCount] - By default all property errors will be returned. Must be >= 1
  *
  * @returns {Promise}
@@ -296,7 +296,7 @@ module.exports = function (value, validatorsOptions, object, originalObject, pat
             validatorOptions = validatorOptions(value, object, originalObject, path);
         }
 
-        if (!validatorOptions) {
+        if (validatorOptions === false || validatorOptions === null || validatorOptions === undefined) {
             return;
         }
 
