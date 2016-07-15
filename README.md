@@ -38,9 +38,8 @@ You can use the module with AMD/CommonJS or just use `window.validy`.
 * `object` (Object) - Object to validate
 * `schema` (Object) - Schema which defines how to validate object
 * `[options]` (Object) - Validation options
-    - `[format]` (String) - Format of object with validation errors
+    - `[format]` (String) - Format of object with validation errors (`nested` (default), `flat`)
     - `[timeout=10000]` (Number) - Validation time limit in ms after which an timeout error will be thrown
-    - `[maxPropertyErrorsCount]` (Number) - Factory for error creation if object not found
 
 **Return value**
 
