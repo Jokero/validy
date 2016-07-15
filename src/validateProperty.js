@@ -19,12 +19,9 @@ module.exports = function(value, schema, object, originalObject, path, options) 
         validatorsOptions = validatorsOptions(value, object, originalObject, path);
     }
 
-    let promise;
-    if (validatorsOptions) {
-        promise = validateValue(value, validatorsOptions, object, originalObject, path, options);
-    } else {
-        promise = Promise.resolve();
-    }
+    const promise = validatorsOptions
+                        ? validateValue(value, validatorsOptions, object, originalObject, path, options)
+                        : Promise.resolve();
 
     return promise.then(validationErrors => {
         if (validationErrors) {
@@ -32,12 +29,12 @@ module.exports = function(value, schema, object, originalObject, path, options) 
         }
 
         const validateObject = require('./validateObject');
-        
+
         if (schema.$items || schema instanceof Array) {
             if (!(value instanceof Array)) {
                 return Promise.resolve(['Must be an array']);
             }
-            
+
             const propertiesSchema = {};
             const itemSchema       = schema.$items || schema[0];
 
