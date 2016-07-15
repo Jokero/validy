@@ -9,11 +9,10 @@ const validators = require('./validators');
  * @param {Object}   originalObject
  * @param {String[]} path
  * @param {Object}   options
- * @param {Number}     [options.maxPropertyErrorsCount]
  *
  * @returns {Promise}
  */
-module.exports = function(value, validatorsOptions, object, originalObject, path, options) {
+module.exports = function(value, validatorsOptions, object, originalObject, path) {
     const validatorsResultsPromises = [];
     const validationErrors          = [];
 
@@ -46,10 +45,6 @@ module.exports = function(value, validatorsOptions, object, originalObject, path
 
     return Promise.all(validatorsResultsPromises).then(() => {
         if (validationErrors.length) {
-            if (options.maxPropertyErrorsCount) {
-                return validationErrors.slice(0, options.maxPropertyErrorsCount);
-            }
-            
             return validationErrors;
         }
     });

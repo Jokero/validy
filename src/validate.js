@@ -13,7 +13,6 @@ const DEFAULT_TIMEOUT = 10000;
  * @param {Object} [options={}]
  * @param {String}   [options.format=nested]
  * @param {Number}   [options.timeout=10000]
- * @param {Number}   [options.maxPropertyErrorsCount] - By default all property errors will be returned. Must be >= 1
  *
  * @returns {Promise}
  */

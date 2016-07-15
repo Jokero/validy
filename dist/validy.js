@@ -96,7 +96,6 @@ var DEFAULT_TIMEOUT = 10000;
  * @param {Object} [options={}]
  * @param {String}   [options.format=nested]
  * @param {Number}   [options.timeout=10000]
- * @param {Number}   [options.maxPropertyErrorsCount] - By default all property errors will be returned. Must be >= 1
  *
  * @returns {Promise}
  */
@@ -136,7 +135,6 @@ var validateProperty = require('./validateProperty');
  * @param {Object}   originalObject
  * @param {String[]} path
  * @param {Object}   options
- * @param {Number}     [options.maxPropertyErrorsCount]
  *
  * @returns {Promise}
  */
@@ -190,7 +188,6 @@ var validateValue = require('./validateValue');
  * @param {Object}   originalObject
  * @param {String[]} path
  * @param {Object}   options
- * @param {Number}     [options.maxPropertyErrorsCount]
  *
  * @returns {Promise}
  */
@@ -255,11 +252,10 @@ var validators = require('./validators');
  * @param {Object}   originalObject
  * @param {String[]} path
  * @param {Object}   options
- * @param {Number}     [options.maxPropertyErrorsCount]
  *
  * @returns {Promise}
  */
-module.exports = function (value, validatorsOptions, object, originalObject, path, options) {
+module.exports = function (value, validatorsOptions, object, originalObject, path) {
     var validatorsResultsPromises = [];
     var validationErrors = [];
 
@@ -292,10 +288,6 @@ module.exports = function (value, validatorsOptions, object, originalObject, pat
 
     return Promise.all(validatorsResultsPromises).then(function () {
         if (validationErrors.length) {
-            if (options.maxPropertyErrorsCount) {
-                return validationErrors.slice(0, options.maxPropertyErrorsCount);
-            }
-
             return validationErrors;
         }
     });

@@ -9,7 +9,6 @@ const validateValue = require('./validateValue');
  * @param {Object}   originalObject
  * @param {String[]} path
  * @param {Object}   options
- * @param {Number}     [options.maxPropertyErrorsCount]
  *
  * @returns {Promise}
  */
