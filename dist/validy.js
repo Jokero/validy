@@ -28,6 +28,11 @@ module.exports = TimeoutError;
 },{"util":15}],3:[function(require,module,exports){
 'use strict';
 
+exports.nested = require('./formatters/nested'); // default
+exports.flat = require('./formatters/flat');
+},{"./formatters/flat":4,"./formatters/nested":5}],4:[function(require,module,exports){
+'use strict';
+
 /**
  * @param {Object} object
  * @param {String} [path='']
@@ -61,12 +66,7 @@ function flatten(object) {
 module.exports = function (object) {
     return flatten(object);
 };
-},{}],4:[function(require,module,exports){
-'use strict';
-
-exports.nested = require('./nested'); // default
-exports.flat = require('./flat');
-},{"./flat":3,"./nested":5}],5:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 'use strict';
 
 /**
@@ -125,7 +125,7 @@ module.exports = function (object, schema) {
         });
     });
 };
-},{"./errors":1,"./formatters":4,"./validateObject":7}],7:[function(require,module,exports){
+},{"./errors":1,"./formatters":3,"./validateObject":7}],7:[function(require,module,exports){
 'use strict';
 
 var validateProperty = require('./validateProperty');
@@ -314,7 +314,7 @@ validate.formatters = require('./formatters');
 validate.errors = require('./errors');
 
 module.exports = validate;
-},{"./errors":1,"./formatters":4,"./validate":6,"./validators":10}],12:[function(require,module,exports){
+},{"./errors":1,"./formatters":3,"./validate":6,"./validators":10}],12:[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
