@@ -1,7 +1,6 @@
 'use strict';
 
 const validateValue = require('./validateValue');
-const utils         = require('./utils');
 
 /**
  * @param {*}        value
@@ -48,8 +47,8 @@ module.exports = function(value, schema, object, originalObject, path, options) 
 
             return validateObject(value, propertiesSchema, originalObject, path, options);
         }
-        
-        if (utils.hasSchemaAtLeastOneProperty(schema)) {
+
+        if (Object.keys(schema).some(propertyName => propertyName.startsWith('$'))) {
             if (!(value instanceof Object)) {
                 return Promise.resolve(['Must be an object']);
             }

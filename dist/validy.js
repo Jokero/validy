@@ -25,7 +25,7 @@ function TimeoutError() {
 util.inherits(TimeoutError, Error);
 
 module.exports = TimeoutError;
-},{"util":16}],3:[function(require,module,exports){
+},{"util":15}],3:[function(require,module,exports){
 'use strict';
 
 /**
@@ -83,24 +83,6 @@ module.exports = function (object) {
 },{}],6:[function(require,module,exports){
 'use strict';
 
-/**
- * @param {Object} schema
- * 
- * @returns {Boolean}
- */
-
-exports.hasSchemaAtLeastOneProperty = function (schema) {
-    for (var propertyName in schema) {
-        if (!propertyName.startsWith('$')) {
-            return true;
-        }
-    }
-
-    return false;
-};
-},{}],7:[function(require,module,exports){
-'use strict';
-
 var validateObject = require('./validateObject');
 var errors = require('./errors');
 var formatters = require('./formatters');
@@ -143,7 +125,7 @@ module.exports = function (object, schema) {
         });
     });
 };
-},{"./errors":1,"./formatters":4,"./validateObject":8}],8:[function(require,module,exports){
+},{"./errors":1,"./formatters":4,"./validateObject":7}],7:[function(require,module,exports){
 'use strict';
 
 var validateProperty = require('./validateProperty');
@@ -194,13 +176,12 @@ module.exports = function (object, schema, originalObject, path, options) {
         }
     });
 };
-},{"./validateProperty":9}],9:[function(require,module,exports){
+},{"./validateProperty":8}],8:[function(require,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
 
 var validateValue = require('./validateValue');
-var utils = require('./utils');
 
 /**
  * @param {*}        value
@@ -256,7 +237,9 @@ module.exports = function (value, schema, object, originalObject, path, options)
             if ((typeof _ret === 'undefined' ? 'undefined' : _typeof(_ret)) === "object") return _ret.v;
         }
 
-        if (utils.hasSchemaAtLeastOneProperty(schema)) {
+        if (Object.keys(schema).some(function (propertyName) {
+            return propertyName.startsWith('$');
+        })) {
             if (!(value instanceof Object)) {
                 return Promise.resolve(['Must be an object']);
             }
@@ -265,7 +248,7 @@ module.exports = function (value, schema, object, originalObject, path, options)
         }
     });
 };
-},{"./utils":6,"./validateObject":8,"./validateValue":10}],10:[function(require,module,exports){
+},{"./validateObject":7,"./validateValue":9}],9:[function(require,module,exports){
 'use strict';
 
 var validators = require('./validators');
@@ -322,11 +305,11 @@ module.exports = function (value, validatorsOptions, object, originalObject, pat
         }
     });
 };
-},{"./validators":11}],11:[function(require,module,exports){
+},{"./validators":10}],10:[function(require,module,exports){
 'use strict';
 
 module.exports = {};
-},{}],12:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 'use strict';
 
 var validate = require('./validate');
@@ -336,7 +319,7 @@ validate.formatters = require('./formatters');
 validate.errors = require('./errors');
 
 module.exports = validate;
-},{"./errors":1,"./formatters":4,"./validate":7,"./validators":11}],13:[function(require,module,exports){
+},{"./errors":1,"./formatters":4,"./validate":6,"./validators":10}],12:[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -361,7 +344,7 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],14:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -457,14 +440,14 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],15:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 module.exports = function isBuffer(arg) {
   return arg && typeof arg === 'object'
     && typeof arg.copy === 'function'
     && typeof arg.fill === 'function'
     && typeof arg.readUInt8 === 'function';
 }
-},{}],16:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -1054,5 +1037,5 @@ function hasOwnProperty(obj, prop) {
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":15,"_process":14,"inherits":13}]},{},[12])(12)
+},{"./support/isBuffer":14,"_process":13,"inherits":12}]},{},[11])(11)
 });
