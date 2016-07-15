@@ -48,7 +48,7 @@ module.exports = function(value, schema, object, originalObject, path, options) 
             return validateObject(value, propertiesSchema, originalObject, path, options);
         }
 
-        if (Object.keys(schema).some(propertyName => propertyName.startsWith('$'))) {
+        if (Object.keys(schema).some(propertyName => !propertyName.startsWith('$'))) {
             if (!(value instanceof Object)) {
                 return Promise.resolve(['Must be an object']);
             }

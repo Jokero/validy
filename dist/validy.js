@@ -238,7 +238,7 @@ module.exports = function (value, schema, object, originalObject, path, options)
         }
 
         if (Object.keys(schema).some(function (propertyName) {
-            return propertyName.startsWith('$');
+            return !propertyName.startsWith('$');
         })) {
             if (!(value instanceof Object)) {
                 return Promise.resolve(['Must be an object']);
