@@ -11,10 +11,10 @@ function flatten(object, path='', flattenObject={}) {
     Object.keys(object).forEach(propertyName => {
         const propertyValue = object[propertyName];
 
-        if (propertyValue instanceof Array) {
-            flattenObject[path + propertyName] = propertyValue;
-        } else {
+        if (propertyValue instanceof Object && !(propertyValue instanceof Array)) {
             flatten(propertyValue, path + propertyName + '.', flattenObject);
+        } else {
+            flattenObject[path + propertyName] = propertyValue;
         }
     });
 
