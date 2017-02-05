@@ -5,13 +5,12 @@ const validateProperty = require('./validateProperty');
 /**
  * @param {Object}   object
  * @param {Object}   schema
- * @param {Object}   originalObject
- * @param {String[]} path
- * @param {Object}   options
+ * @param {Object}   fullObject
+ * @param {string[]} path
  *
  * @returns {Promise}
  */
-module.exports = function(object, schema, originalObject, path, options) {
+module.exports = function(object, schema, fullObject, path) {
     const validationPromises = [];
     const validationErrors   = {};
 
@@ -25,16 +24,11 @@ module.exports = function(object, schema, originalObject, path, options) {
         
         let propertySchema = schema[propertyName];
         if (propertySchema instanceof Function) {
-            propertySchema = propertySchema(propertyValue, object, originalObject, propertyPath);
+            propertySchema = propertySchema(propertyValue, object, fullObject, propertyPath);
         }
 
-        if (propertySchema) {
-            const validationPromise = validateProperty(propertyValue,
-                                                       propertySchema,
-                                                       object,
-                                                       originalObject,
-                                                       propertyPath,
-                                                       options);
+        if (propertySchema instanceof Object) {
+            const validationPromise = validateProperty(propertyValue, propertySchema, object, fullObject, propertyPath);
 
             validationPromise.then(validationError => {
                 if (validationError) {

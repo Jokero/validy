@@ -3,10 +3,10 @@
 /**
  * Errors object has nested structure by default, so we just return object without any changes
  *
- * @param {Object} object
+ * @param {Object} errors
  *
  * @returns {Object}
  */
-module.exports = function(object) {
-    return object;
+module.exports = function(errors) {
+    return errors;
 };

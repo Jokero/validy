@@ -1,61 +1,34 @@
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.validy = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 'use strict';
 
-exports.TimeoutError = require('./errors/timeoutError');
-},{"./errors/timeoutError":2}],2:[function(require,module,exports){
-'use strict';
-
-var util = require('util');
-
-/**
- * @param {String} [message=Validation timeout]
- * 
- * @constructor
- */
-function TimeoutError() {
-  var message = arguments.length <= 0 || arguments[0] === undefined ? 'Validation timeout' : arguments[0];
-
-  Error.call(this);
-  Error.captureStackTrace(this, this.constructor);
-
-  this.name = this.constructor.name;
-  this.message = message;
-}
-
-util.inherits(TimeoutError, Error);
-
-module.exports = TimeoutError;
-},{"util":15}],3:[function(require,module,exports){
-'use strict';
-
-exports.nested = require('./formatters/nested'); // default
 exports.flat = require('./formatters/flat');
-},{"./formatters/flat":4,"./formatters/nested":5}],4:[function(require,module,exports){
+exports.nested = require('./formatters/nested');
+},{"./formatters/flat":2,"./formatters/nested":3}],2:[function(require,module,exports){
 'use strict';
 
 /**
  * @param {Object} object
- * @param {String} [path='']
- * @param {Object} [flattenObject={}]
+ * @param {string} [path='']
+ * @param {Object} [flatObject={}]
  * 
  * @returns {Object}
  */
 
 function flatten(object) {
-    var path = arguments.length <= 1 || arguments[1] === undefined ? '' : arguments[1];
-    var flattenObject = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
+    var path = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '';
+    var flatObject = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
 
     Object.keys(object).forEach(function (propertyName) {
         var propertyValue = object[propertyName];
 
         if (propertyValue instanceof Object && !(propertyValue instanceof Array)) {
-            flatten(propertyValue, path + propertyName + '.', flattenObject);
+            flatten(propertyValue, path + propertyName + '.', flatObject);
         } else {
-            flattenObject[path + propertyName] = propertyValue;
+            flatObject[path + propertyName] = propertyValue;
         }
     });
 
-    return flattenObject;
+    return flatObject;
 }
 
 /**
@@ -66,65 +39,68 @@ function flatten(object) {
 module.exports = function (object) {
     return flatten(object);
 };
-},{}],5:[function(require,module,exports){
+},{}],3:[function(require,module,exports){
 'use strict';
 
 /**
  * Errors object has nested structure by default, so we just return object without any changes
  *
- * @param {Object} object
+ * @param {Object} errors
  *
  * @returns {Object}
  */
 
-module.exports = function (object) {
-  return object;
+module.exports = function (errors) {
+  return errors;
 };
-},{}],6:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
 'use strict';
 
 var validateObject = require('./validateObject');
-var errors = require('./errors');
+var ValidationError = require('./validationError');
 var formatters = require('./formatters');
 
-var DEFAULT_FORMAT = 'nested';
-var DEFAULT_TIMEOUT = 10000;
+var DEFAULT_OPTIONS = {
+    format: 'flat',
+    reject: false
+};
 
 /**
- * @param {Object} object
- * @param {Object} schema
- * @param {Object} [options={}]
- * @param {String}   [options.format=nested]
- * @param {Number}   [options.timeout=10000]
+ * @param {Object}  object
+ * @param {Object}  schema
+ * @param {Object}  [options={}]
+ * @param {string}    [options.format=flat]
+ * @param {boolean}   [options.reject=false]
  *
  * @returns {Promise}
  */
 module.exports = function (object, schema) {
-    var options = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
+    var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
 
-    var format = options.format || DEFAULT_FORMAT;
-    var timeout = options.timeout || DEFAULT_TIMEOUT;
+    options = Object.assign({}, DEFAULT_OPTIONS, options);
 
     return new Promise(function (resolve, reject) {
-        var formatter = formatters[format];
+        var formatter = formatters[options.format];
         if (!formatter) {
-            return reject(new Error('Unknown format ' + format));
+            return reject(new Error('Unknown format ' + options.format));
         }
 
-        var timeoutObject = setTimeout(function () {
-            reject(new errors.TimeoutError());
-        }, timeout);
+        validateObject(object, schema, object, []).then(function (validationErrors) {
+            if (!validationErrors) {
+                return resolve();
+            }
 
-        validateObject(object, schema, object, [], options).then(function (result) {
-            clearTimeout(timeoutObject);
-            resolve(formatter(result));
-        }).catch(function (err) {
-            clearTimeout(timeoutObject);
-            reject(err);
-        });
+            var formattedErrors = formatter(validationErrors);
+
+            if (options.reject) {
+                reject(new ValidationError(formattedErrors));
+            } else {
+                resolve(formattedErrors);
+            }
+        }).catch(reject);
     });
 };
-},{"./errors":1,"./formatters":3,"./validateObject":7}],7:[function(require,module,exports){
+},{"./formatters":1,"./validateObject":5,"./validationError":8}],5:[function(require,module,exports){
 'use strict';
 
 var validateProperty = require('./validateProperty');
@@ -132,13 +108,12 @@ var validateProperty = require('./validateProperty');
 /**
  * @param {Object}   object
  * @param {Object}   schema
- * @param {Object}   originalObject
- * @param {String[]} path
- * @param {Object}   options
+ * @param {Object}   fullObject
+ * @param {string[]} path
  *
  * @returns {Promise}
  */
-module.exports = function (object, schema, originalObject, path, options) {
+module.exports = function (object, schema, fullObject, path) {
     var validationPromises = [];
     var validationErrors = {};
 
@@ -152,11 +127,11 @@ module.exports = function (object, schema, originalObject, path, options) {
 
         var propertySchema = schema[propertyName];
         if (propertySchema instanceof Function) {
-            propertySchema = propertySchema(propertyValue, object, originalObject, propertyPath);
+            propertySchema = propertySchema(propertyValue, object, fullObject, propertyPath);
         }
 
-        if (propertySchema) {
-            var validationPromise = validateProperty(propertyValue, propertySchema, object, originalObject, propertyPath, options);
+        if (propertySchema instanceof Object) {
+            var validationPromise = validateProperty(propertyValue, propertySchema, object, fullObject, propertyPath);
 
             validationPromise.then(function (validationError) {
                 if (validationError) {
@@ -174,10 +149,10 @@ module.exports = function (object, schema, originalObject, path, options) {
         }
     });
 };
-},{"./validateProperty":8}],8:[function(require,module,exports){
+},{"./validateProperty":6}],6:[function(require,module,exports){
 'use strict';
 
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
 var validateValue = require('./validateValue');
 
@@ -185,19 +160,19 @@ var validateValue = require('./validateValue');
  * @param {*}        value
  * @param {Object}   schema
  * @param {Object}   object
- * @param {Object}   originalObject
- * @param {String[]} path
- * @param {Object}   options
+ * @param {Object}   fullObject
+ * @param {string[]} path
  *
  * @returns {Promise}
+ *
  */
-module.exports = function (value, schema, object, originalObject, path, options) {
-    var validatorsOptions = schema.$validators;
+module.exports = function (value, schema, object, fullObject, path) {
+    var validatorsOptions = schema.$validate;
     if (validatorsOptions instanceof Function) {
-        validatorsOptions = validatorsOptions(value, object, originalObject, path);
+        validatorsOptions = validatorsOptions(value, object, fullObject, path);
     }
 
-    var promise = validatorsOptions ? validateValue(value, validatorsOptions, object, originalObject, path, options) : Promise.resolve();
+    var promise = validatorsOptions instanceof Object ? validateValue(value, validatorsOptions, object, fullObject, path) : Promise.resolve();
 
     return promise.then(function (validationErrors) {
         if (validationErrors) {
@@ -206,11 +181,14 @@ module.exports = function (value, schema, object, originalObject, path, options)
 
         var validateObject = require('./validateObject');
 
-        if (schema.$items || schema instanceof Array) {
+        if (schema.$items || schema[0]) {
             var _ret = function () {
                 if (!(value instanceof Array)) {
                     return {
-                        v: Promise.resolve(['Must be an array'])
+                        v: Promise.resolve([{
+                            error: 'array',
+                            message: 'must be an array'
+                        }])
                     };
                 }
 
@@ -218,11 +196,11 @@ module.exports = function (value, schema, object, originalObject, path, options)
                 var itemSchema = schema.$items || schema[0];
 
                 value.forEach(function (item, index) {
-                    propertiesSchema[index] = itemSchema;
+                    return propertiesSchema[index] = itemSchema;
                 });
 
                 return {
-                    v: validateObject(value, propertiesSchema, originalObject, path, options)
+                    v: validateObject(value, propertiesSchema, fullObject, path)
                 };
             }();
 
@@ -233,14 +211,17 @@ module.exports = function (value, schema, object, originalObject, path, options)
             return !propertyName.startsWith('$');
         })) {
             if (!(value instanceof Object)) {
-                return Promise.resolve(['Must be an object']);
+                return Promise.resolve([{
+                    error: 'object',
+                    message: 'must be an object'
+                }]);
             }
 
-            return validateObject(value, schema, originalObject, path, options);
+            return validateObject(value, schema, fullObject, path);
         }
     });
 };
-},{"./validateObject":7,"./validateValue":9}],9:[function(require,module,exports){
+},{"./validateObject":5,"./validateValue":7}],7:[function(require,module,exports){
 'use strict';
 
 var validators = require('./validators');
@@ -249,13 +230,12 @@ var validators = require('./validators');
  * @param {*}        value
  * @param {Object}   validatorsOptions
  * @param {Object}   object
- * @param {Object}   originalObject
- * @param {String[]} path
- * @param {Object}   options
+ * @param {Object}   fullObject
+ * @param {string[]} path
  *
  * @returns {Promise}
  */
-module.exports = function (value, validatorsOptions, object, originalObject, path) {
+module.exports = function (value, validatorsOptions, object, fullObject, path) {
     var validatorsResultsPromises = [];
     var validationErrors = [];
 
@@ -267,14 +247,14 @@ module.exports = function (value, validatorsOptions, object, originalObject, pat
 
         var validatorOptions = validatorsOptions[validatorName];
         if (validatorOptions instanceof Function) {
-            validatorOptions = validatorOptions(value, object, originalObject, path);
+            validatorOptions = validatorOptions(value, object, fullObject, path);
         }
 
         if (validatorOptions === false || validatorOptions === null || validatorOptions === undefined) {
             return;
         }
 
-        var validatorResult = validator(value, validatorOptions, object, originalObject, path);
+        var validatorResult = validator(value, validatorOptions, object, fullObject, path);
 
         var validatorResultPromise = Promise.resolve(validatorResult);
         validatorResultPromise.then(function (validationError) {
@@ -292,737 +272,1228 @@ module.exports = function (value, validatorsOptions, object, originalObject, pat
         }
     });
 };
-},{"./validators":10}],10:[function(require,module,exports){
+},{"./validators":9}],8:[function(require,module,exports){
 'use strict';
 
-module.exports = {};
-},{}],11:[function(require,module,exports){
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+function _extendableBuiltin(cls) {
+    function ExtendableBuiltin() {
+        var instance = Reflect.construct(cls, Array.from(arguments));
+        Object.setPrototypeOf(instance, Object.getPrototypeOf(this));
+        return instance;
+    }
+
+    ExtendableBuiltin.prototype = Object.create(cls.prototype, {
+        constructor: {
+            value: cls,
+            enumerable: false,
+            writable: true,
+            configurable: true
+        }
+    });
+
+    if (Object.setPrototypeOf) {
+        Object.setPrototypeOf(ExtendableBuiltin, cls);
+    } else {
+        ExtendableBuiltin.__proto__ = cls;
+    }
+
+    return ExtendableBuiltin;
+}
+
+var ValidationError = function (_extendableBuiltin2) {
+    _inherits(ValidationError, _extendableBuiltin2);
+
+    function ValidationError(errors) {
+        _classCallCheck(this, ValidationError);
+
+        var _this = _possibleConstructorReturn(this, (ValidationError.__proto__ || Object.getPrototypeOf(ValidationError)).call(this));
+
+        if (Error.captureStackTrace) {
+            Error.captureStackTrace(_this, _this.constructor);
+        }
+
+        _this.name = _this.constructor.name;
+        _this.errors = errors;
+        return _this;
+    }
+
+    return ValidationError;
+}(_extendableBuiltin(Error));
+
+module.exports = ValidationError;
+},{}],9:[function(require,module,exports){
+'use strict';
+
+var validators = require('common-validators');
+
+validators.confirmOriginal = validators.confirm;
+validators.add({
+    confirm: function confirm(value, options, object, fullObject, path) {
+        var confirmOptions = {
+            key: path[path.length - 1],
+            comparedKey: options instanceof Object ? options.key : options
+        };
+
+        return this.confirmOriginal(object, confirmOptions);
+    }
+});
+
+module.exports = validators;
+},{"common-validators":12}],10:[function(require,module,exports){
 'use strict';
 
 var validate = require('./validate');
 
 validate.validators = require('./validators');
 validate.formatters = require('./formatters');
-validate.errors = require('./errors');
+validate.ValidationError = require('./validationError');
 
 module.exports = validate;
-},{"./errors":1,"./formatters":3,"./validate":6,"./validators":10}],12:[function(require,module,exports){
-if (typeof Object.create === 'function') {
-  // implementation from standard node.js 'util' module
-  module.exports = function inherits(ctor, superCtor) {
-    ctor.super_ = superCtor
-    ctor.prototype = Object.create(superCtor.prototype, {
-      constructor: {
-        value: ctor,
-        enumerable: false,
-        writable: true,
-        configurable: true
-      }
-    });
-  };
-} else {
-  // old school shim for old browsers
-  module.exports = function inherits(ctor, superCtor) {
-    ctor.super_ = superCtor
-    var TempCtor = function () {}
-    TempCtor.prototype = superCtor.prototype
-    ctor.prototype = new TempCtor()
-    ctor.prototype.constructor = ctor
-  }
-}
+},{"./formatters":1,"./validate":4,"./validationError":8,"./validators":9}],11:[function(require,module,exports){
+'use strict';
 
-},{}],13:[function(require,module,exports){
-// shim for using process in browser
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
 
-var process = module.exports = {};
-var queue = [];
-var draining = false;
-var currentQueue;
-var queueIndex = -1;
+var toDateTime = require('normalize-date');
 
-function cleanUpNextTick() {
-    if (!draining || !currentQueue) {
-        return;
-    }
-    draining = false;
-    if (currentQueue.length) {
-        queue = currentQueue.concat(queue);
-    } else {
-        queueIndex = -1;
-    }
-    if (queue.length) {
-        drainQueue();
-    }
-}
+/* Validators */
+var validators = {
+    custom: function custom(value, arg, options) {
+        if (typeof arg === 'function') {
+            return arg(value, options);
+        }
+    },
 
-function drainQueue() {
-    if (draining) {
-        return;
-    }
-    var timeout = setTimeout(cleanUpNextTick);
-    draining = true;
+    //Isn't empty
+    required: function required(value) {
+        if (!exists(value)) {
+            return "Is required";
+        }
+    },
+    presence: 'required',
 
-    var len = queue.length;
-    while(len) {
-        currentQueue = queue;
-        queue = [];
-        while (++queueIndex < len) {
-            if (currentQueue) {
-                currentQueue[queueIndex].run();
+    notEmpty: function notEmpty(value) {
+        if (isEmpty(value)) {
+            return "Can't be blank";
+        }
+    },
+
+    //Equality
+    equal: function equal(value, arg, options) {
+        if (exists(value) && !deepEqual(value, arg, options.strict)) {
+            return 'Must be equal %{arg}';
+        }
+    },
+
+    confirm: function confirm(value, options) {
+        if (exists(value) && !deepEqual(toObject(value)[options.key], toObject(value)[options.comparedKey], options.strict)) {
+            return '%{key} must be equal %{comparedKey}';
+        }
+    },
+
+    //Types
+    object: function object(value) {
+        if (!isPlainObject(value)) {
+            return 'Must be an object';
+        }
+    },
+
+    array: function array(value) {
+        if (!isArray(value)) {
+            return 'Must be an array';
+        }
+    },
+
+    string: function string(value) {
+        if (!isString(value)) {
+            return 'Must be a string';
+        }
+    },
+
+    number: function number(value) {
+        if (!isNumber(value)) {
+            return 'Must be a number';
+        }
+    },
+
+    integer: function integer(value) {
+        if (!isInteger(value)) {
+            return 'Must be an integer';
+        }
+    },
+
+    date: function date(value) {
+        if (!isDateTime(value)) {
+            return 'Must be a valid date';
+        }
+    },
+
+    boolean: function boolean(value) {
+        if (!isBoolean(value)) {
+            return 'Must be a boolean';
+        }
+    },
+
+    function: function _function(value) {
+        if (!isFunction(value)) {
+            return 'Must be a function';
+        }
+    },
+
+    null: function _null(value) {
+        if (value !== null) {
+            return 'Must be a null';
+        }
+    },
+
+    //Number
+    max: function max(value, arg, options) {
+        if (exists(value) && !(options.exclusive ? toNumber(value) < arg : toNumber(value) <= arg)) {
+            return options.exclusive ? 'Must be less %{arg}' : 'Must be less or equal %{arg}';
+        }
+    },
+
+    min: function min(value, arg, options) {
+        if (exists(value) && !(options.exclusive ? toNumber(value) > arg : toNumber(value) >= arg)) {
+            return options.exclusive ? 'Must be more %{arg}' : 'Must be more or equal %{arg}';
+        }
+    },
+
+    range: function range(value, options) {
+        if (exists(value)) {
+            if (!(options.exclusiveFrom || options.exclusive ? toNumber(value) > options.from : toNumber(value) >= options.from)) {
+                return {
+                    error: 'range.less',
+                    message: options.lessMessage || 'Must be from %{from} to %{to}'
+                };
+            } else if (!(options.exclusiveTo || options.exclusive ? toNumber(value) < options.to : toNumber(value) <= options.to)) {
+                return {
+                    error: 'range.many',
+                    message: options.manyMessage || 'Must be from %{from} to %{to}'
+                };
             }
         }
-        queueIndex = -1;
-        len = queue.length;
-    }
-    currentQueue = null;
-    draining = false;
-    clearTimeout(timeout);
-}
+    },
 
-process.nextTick = function (fun) {
-    var args = new Array(arguments.length - 1);
-    if (arguments.length > 1) {
-        for (var i = 1; i < arguments.length; i++) {
-            args[i - 1] = arguments[i];
+    odd: function odd(value) {
+        if (exists(value) && toNumber(value) % 2 !== 1) {
+            return 'Must be odd';
         }
-    }
-    queue.push(new Item(fun, args));
-    if (queue.length === 1 && !draining) {
-        setTimeout(drainQueue, 0);
+    },
+
+    even: function even(value) {
+        if (exists(value) && toNumber(value) % 2 !== 0) {
+            return 'Must be even';
+        }
+    },
+
+    divisible: function divisible(value, arg) {
+        if (exists(value) && toNumber(value) % arg !== 0) {
+            return 'Must be divisible by %{arg}';
+        }
+    },
+
+    maxLength: function maxLength(value, arg) {
+        if (exists(value) && toArray(value).length > arg) {
+            return 'Length must be less or equal %{arg}';
+        }
+    },
+
+    minLength: function minLength(value, arg) {
+        if (exists(value) && toArray(value).length < arg) {
+            return 'Length must be more or equal %{arg}';
+        }
+    },
+
+    equalLength: function equalLength(value, arg) {
+        if (exists(value) && toArray(value).length !== arg) {
+            return 'Length must be equal %{arg}';
+        }
+    },
+
+    rangeLength: function rangeLength(value, options) {
+        if (exists(value)) {
+            if (toArray(value).length > options.to) {
+                return {
+                    error: 'rangeLength.many',
+                    message: options.manyMessage || 'Length must be from %{from} to %{to}'
+                };
+            } else if (toArray(value).length < options.from) {
+                return {
+                    error: 'rangeLength.less',
+                    message: options.lessMessage || 'Length must be from %{from} to %{to}'
+                };
+            }
+        }
+    },
+
+    //Size
+    maxSize: function maxSize(value, arg) {
+        var valueSize = byteLength(value);
+
+        if (exists(value) && valueSize > arg) {
+            return {
+                message: 'Size must be less %{arg}',
+                size: valueSize
+            };
+        }
+    },
+
+    minSize: function minSize(value, arg) {
+        var valueSize = byteLength(value);
+
+        if (exists(value) && valueSize < arg) {
+            return {
+                message: 'Size must be more %{arg}',
+                size: valueSize
+            };
+        }
+    },
+
+    equalSize: function equalSize(value, arg) {
+        var valueSize = byteLength(value);
+
+        if (exists(value) && valueSize !== arg) {
+            return {
+                message: 'Length must be equal %{arg}',
+                size: valueSize
+            };
+        }
+    },
+
+    rangeSize: function rangeSize(value, options) {
+        var valueSize = byteLength(value);
+
+        if (exists(value)) {
+            if (valueSize < options.from) {
+                return {
+                    error: 'rangeSize.less',
+                    message: options.lessMessage || 'Size must be from %{from} to %{to}',
+                    size: valueSize
+                };
+            } else if (valueSize > options.to) {
+                return {
+                    error: 'rangeSize.many',
+                    message: options.manyMessage || 'Size must be from %{from} to %{to}',
+                    size: valueSize
+                };
+            }
+        }
+    },
+
+    //RegExp
+    pattern: function pattern(value, arg) {
+        if (exists(value) && !new RegExp(arg).test(toString(value))) {
+            return 'Does not match the pattern %{arg}';
+        }
+    },
+
+    //White and black list
+    inclusion: function inclusion(value, arg) {
+        if (exists(value) && !contains(arg, value)) {
+            return '%{value} is not allowed';
+        }
+    },
+
+    exclusion: function exclusion(value, arg) {
+        if (exists(value) && contains(arg, value, true)) {
+            return '%{value} is restricted';
+        }
+    },
+
+    //Date and time
+    maxDateTime: function maxDateTime(value, arg, options) {
+        if (exists(value) && !(options.exclusive ? toDateTime(value) < toDateTime(arg) : toDateTime(value) <= toDateTime(arg))) {
+            return 'Must be earlier than %{arg}';
+        }
+    },
+
+    maxDate: function maxDate(value, arg, options) {
+        if (exists(value) && !(options.exclusive ? toDate(value) < toDate(arg) : toDate(value) <= toDate(arg))) {
+            return 'Must be earlier than %{arg}';
+        }
+    },
+
+    minDateTime: function minDateTime(value, arg, options) {
+        if (exists(value) && !(options.exclusive ? toDateTime(value) > toDateTime(arg) : toDateTime(value) >= toDateTime(arg))) {
+            return 'Must be no earlier than %{arg}';
+        }
+    },
+
+    minDate: function minDate(value, arg, options) {
+        if (exists(value) && !(options.exclusive ? toDate(value) > toDate(arg) : toDate(value) >= toDate(arg))) {
+            return 'Must be no earlier than %{arg}';
+        }
+    },
+
+    equalDateTime: function equalDateTime(value, arg) {
+        if (exists(value) && toDateTime(value).valueOf() !== toDateTime(arg).valueOf()) {
+            return 'Must be equal %{arg}';
+        }
+    },
+
+    equalDate: function equalDate(value, arg) {
+        if (exists(value) && toDate(value).valueOf() !== toDate(arg).valueOf()) {
+            return 'Must be equal %{arg}';
+        }
+    },
+
+    rangeDateTime: function rangeDateTime(value, options) {
+        if (exists(value)) {
+            if (!(options.exclusiveFrom || options.exclusive ? toDateTime(value) > toDateTime(options.from) : toDateTime(value) >= toDateTime(options.from))) {
+                return {
+                    error: 'rangeDateTime.many',
+                    message: options.manyMessage || 'Must be from %{from} to %{to}'
+                };
+            } else if (!(options.exclusiveTo || options.exclusive ? toDateTime(value) < toDateTime(options.to) : toDateTime(value) <= toDateTime(options.to))) {
+                return {
+                    error: 'rangeDateTime.less',
+                    message: options.lessMessage || 'Must be from %{from} to %{to}'
+                };
+            }
+        }
+    },
+
+    rangeDate: function rangeDate(value, options) {
+        if (exists(value)) {
+            if (!(options.exclusiveFrom || options.exclusive ? toDate(value) > toDate(options.from) : toDate(value) >= toDate(options.from))) {
+                return {
+                    error: 'rangeDate.many',
+                    message: options.manyMessage || 'Must be from %{from} to %{to}'
+                };
+            } else if (!(options.exclusiveTo || options.exclusive ? toDate(value) < toDate(options.to) : toDate(value) <= toDate(options.to))) {
+                return {
+                    error: 'rangeDate.less',
+                    message: options.lessMessage || 'Must be from %{from} to %{to}'
+                };
+            }
+        }
+    },
+
+    //Web
+    email: function email(value) {
+        var PATTERN = /^[a-z0-9\u007F-\uffff!#$%&'*+\/=?^_`{|}~-]+(?:\.[a-z0-9\u007F-\uffff!#$%&'*+\/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/i;
+
+        if (exists(value) && !PATTERN.exec(toString(value))) {
+            return 'Must be a valid email';
+        }
+    },
+
+    // A URL validator that is used to validate URLs with the ability to
+    // restrict schemes and some domains.
+    url: function url(value, options) {
+        if (exists(value)) {
+            var protocols = options.protocols || ['http', 'https'];
+
+            // https://gist.github.com/dperini/729294
+            var regex = '^' +
+            // schemes
+            '(?:(?:' + protocols.join('|') + '):\\/\\/)' +
+            // credentials
+            '(?:\\S+(?::\\S*)?@)?';
+
+            regex += '(?:';
+
+            var tld = '(?:\\.(?:[a-z\\u00a1-\\uffff]{2,}))';
+
+            // This ia a special case for the localhost hostname
+            if (options.allowLocal) {
+                tld += '?';
+            } else {
+                // private & local addresses
+                regex += '(?!10(?:\\.\\d{1,3}){3})' + '(?!127(?:\\.\\d{1,3}){3})' + '(?!169\\.254(?:\\.\\d{1,3}){2})' + '(?!192\\.168(?:\\.\\d{1,3}){2})' + '(?!172' + '\\.(?:1[6-9]|2\\d|3[0-1])' + '(?:\\.\\d{1,3})' + '{2})';
+            }
+
+            var hostname = '(?:(?:[a-z\\u00a1-\\uffff0-9]+-?)*[a-z\\u00a1-\\uffff0-9]+)' + '(?:\\.(?:[a-z\\u00a1-\\uffff0-9]+-?)*[a-z\\u00a1-\\uffff0-9]+)*' + tld + ')';
+
+            // reserved addresses
+            regex += '(?:[1-9]\\d?|1\\d\\d|2[01]\\d|22[0-3])' + '(?:\\.(?:1?\\d{1,2}|2[0-4]\\d|25[0-5])){2}' + '(?:\\.(?:[1-9]\\d?|1\\d\\d|2[0-4]\\d|25[0-4]))' + '|' + hostname +
+            // port number
+            '(?::\\d{2,5})?' +
+            // path
+            '(?:\\/[^\\s]*)?' + '$';
+
+            var PATTERN = new RegExp(regex, 'i');
+
+            if (!PATTERN.exec(toString(value))) {
+                return 'is not a valid url';
+            }
+        }
+    },
+
+    ipAddress: function ipAddress(value, options) {
+        if (exists(value)) {
+            var IPV4_REGEXP = /^\s*((([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]))\s*$/;
+            var IPV6_REGEXP = /^\s*((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){6}(:[0-9A-Fa-f]{1,4}|((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){5}(((:[0-9A-Fa-f]{1,4}){1,2})|:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){4}(((:[0-9A-Fa-f]{1,4}){1,3})|((:[0-9A-Fa-f]{1,4})?:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){3}(((:[0-9A-Fa-f]{1,4}){1,4})|((:[0-9A-Fa-f]{1,4}){0,2}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){2}(((:[0-9A-Fa-f]{1,4}){1,5})|((:[0-9A-Fa-f]{1,4}){0,3}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){1}(((:[0-9A-Fa-f]{1,4}){1,6})|((:[0-9A-Fa-f]{1,4}){0,4}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(:(((:[0-9A-Fa-f]{1,4}){1,7})|((:[0-9A-Fa-f]{1,4}){0,5}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:)))(%.+)?\s*$/;
+            var HOSTNAME_REGEXP = /^\s*((?=.{1,255}$)(?=.*[A-Za-z].*)[0-9A-Za-z](?:(?:[0-9A-Za-z]|\b-){0,61}[0-9A-Za-z])?(?:\.[0-9A-Za-z](?:(?:[0-9A-Za-z]|\b-){0,61}[0-9A-Za-z])?)*)\s*$/;
+
+            var regExps = { ipv4: IPV4_REGEXP, ipv6: IPV6_REGEXP, hostname: HOSTNAME_REGEXP };
+
+            var isError = !Object.keys(regExps).some(function (key) {
+                if (options[key] || options[key] === undefined) {
+                    return regExps[key].test(toString(value));
+                }
+            });
+
+            var ipv4 = options.ipv4;
+            var ipv6 = options.ipv6;
+            var hostname = options.hostname;
+
+            if (isError) {
+                if (ipv4 && !ipv6 && !hostname) {
+                    return {
+                        error: 'ip.v4',
+                        message: options.ipv4Message || 'Must be a valid IPv4 address'
+                    };
+                }
+
+                if (ipv6 && !ipv4 && !hostname) {
+                    return {
+                        error: 'ip.v6',
+                        message: options.ipv6Message || 'Must be a valid IPv6 address'
+                    };
+                }
+
+                if (hostname && !ipv4 && !ipv6) {
+                    return {
+                        error: 'ip.hostname',
+                        message: options.hostnameMessage || 'Must be a valid hostname'
+                    };
+                }
+
+                if (ipv6 && ipv4 && !hostname) {
+                    return {
+                        error: 'ip.address',
+                        message: options.addressMessage || 'Must be a valid IP address'
+                    };
+                }
+
+                return 'Must be a valid IP address or hostname';
+            }
+        }
+    },
+
+    //File
+    accept: function accept(files, arg, options) {
+        files = toArray(options.files || files);
+
+        if (exists(files)) {
+            var _ret = function () {
+                var allowedTypes = (arg || '').split(',').map(function (type) {
+                    return type.trim().replace('*', '');
+                });
+
+                var isError = files.some(function (file) {
+                    return allowedTypes.every(function (type) {
+                        if (type[0] === '.') {
+                            //extension
+                            return '.' + ((file.name || '').split('.').pop() || '').toLowerCase() !== type;
+                        } else {
+                            //mime type
+                            return (file.type || '').indexOf(type) === -1;
+                        }
+                    });
+                });
+
+                if (isError) {
+                    return {
+                        v: 'File must be a %{arg}'
+                    };
+                }
+            }();
+
+            if ((typeof _ret === 'undefined' ? 'undefined' : _typeof(_ret)) === "object") return _ret.v;
+        }
+    },
+    minFileSize: function minFileSize(files, arg, options) {
+        files = toArray(options.files || files);
+
+        if (exists(files) && !files.every(function (file) {
+            return toNumber(file.size) >= arg;
+        })) {
+            return 'File size must be more or equal %{arg} bytes';
+        }
+    },
+    maxFileSize: function maxFileSize(files, arg, options) {
+        files = toArray(options.files || files);
+
+        if (exists(files) && !files.every(function (file) {
+            return toNumber(file.size) <= arg;
+        })) {
+            return 'File size must be less or equal %{arg} bytes';
+        }
+    },
+    minFileSizeAll: function minFileSizeAll(files, arg, options) {
+        files = toArray(options.files || files);
+
+        if (exists(files) && !(files.reduce(function (prev, curr) {
+            return toNumber(prev.size || prev) + toNumber(curr.size);
+        }) >= arg)) {
+            return 'Total files size must be more or equal %{arg} bytes';
+        }
+    },
+    maxFileSizeAll: function maxFileSizeAll(files, arg, options) {
+        files = toArray(options.files || files);
+
+        if (exists(files) && !(files.reduce(function (prev, curr) {
+            return toNumber(prev.size || prev) + toNumber(curr.size);
+        }) <= arg)) {
+            return 'Total files size must be less or equal %{arg} bytes';
+        }
+    },
+    minFileNameLength: function minFileNameLength(files, arg, options) {
+        files = toArray(options.files || files);
+
+        if (exists(files) && files.some(function (file) {
+            return toArray(file.name).length < arg;
+        })) {
+            return 'File name length must be more or equal %{arg}';
+        }
+    },
+    maxFileNameLength: function maxFileNameLength(files, arg, options) {
+        files = toArray(options.files || files);
+
+        if (exists(files) && files.some(function (file) {
+            return toArray(file.name).length > arg;
+        })) {
+            return 'File name length must be less or equal %{arg}';
+        }
+    },
+
+
+    //Test
+    alwaysValid: function alwaysValid() {},
+    alwaysInvalid: function alwaysInvalid() {
+        return 'Any value is invalid';
     }
 };
 
-// v8 likes predictible objects
-function Item(fun, array) {
-    this.fun = fun;
-    this.array = array;
+/* Utils */
+var util = {
+    toDateTime: toDateTime,
+    toDate: toDate,
+    isNumber: isNumber,
+    isFunction: isFunction,
+    isInteger: isInteger,
+    isBoolean: isBoolean,
+    isArray: isArray,
+    isDateTime: isDateTime,
+    isString: isString,
+    isObject: isObject,
+    isPlainObject: isPlainObject,
+    isDefined: isDefined,
+    isEmpty: isEmpty,
+    exists: exists,
+    contains: contains,
+    toArray: toArray,
+    toNumber: toNumber,
+    toString: toString,
+    toObject: toObject,
+    byteLength: byteLength
+};
+
+function toDate(date) {
+    return toDateTime(date, { noTime: true });
 }
-Item.prototype.run = function () {
-    this.fun.apply(null, this.array);
-};
-process.title = 'browser';
-process.browser = true;
-process.env = {};
-process.argv = [];
-process.version = ''; // empty string to avoid regexp issues
-process.versions = {};
 
-function noop() {}
-
-process.on = noop;
-process.addListener = noop;
-process.once = noop;
-process.off = noop;
-process.removeListener = noop;
-process.removeAllListeners = noop;
-process.emit = noop;
-
-process.binding = function (name) {
-    throw new Error('process.binding is not supported');
-};
-
-process.cwd = function () { return '/' };
-process.chdir = function (dir) {
-    throw new Error('process.chdir is not supported');
-};
-process.umask = function() { return 0; };
-
-},{}],14:[function(require,module,exports){
-module.exports = function isBuffer(arg) {
-  return arg && typeof arg === 'object'
-    && typeof arg.copy === 'function'
-    && typeof arg.fill === 'function'
-    && typeof arg.readUInt8 === 'function';
+function isNumber(value) {
+    return typeof value === 'number' && !isNaN(value);
 }
-},{}],15:[function(require,module,exports){
-(function (process,global){
-// Copyright Joyent, Inc. and other Node contributors.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to permit
-// persons to whom the Software is furnished to do so, subject to the
-// following conditions:
-//
-// The above copyright notice and this permission notice shall be included
-// in all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
-// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-// USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-var formatRegExp = /%[sdj%]/g;
-exports.format = function(f) {
-  if (!isString(f)) {
-    var objects = [];
-    for (var i = 0; i < arguments.length; i++) {
-      objects.push(inspect(arguments[i]));
+function isFunction(value) {
+    return typeof value === 'function';
+}
+
+function isInteger(value) {
+    return isNumber(value) && value % 1 === 0;
+}
+
+function isBoolean(value) {
+    return typeof value === 'boolean';
+}
+
+function isArray(value) {
+    return Array.isArray(value);
+}
+
+function isDateTime(value) {
+    return !isArray(value) && !isNaN(Date.parse(value));
+}
+
+function isString(value) {
+    return typeof value === 'string';
+}
+
+function isObject(obj) {
+    return obj === Object(obj);
+}
+
+//This is no full plain-object checking, but it is better for validation when you need to know
+//that object is no array or hasn't common type. Generally you prefer to consider instance of custom class as object
+function isPlainObject(value) {
+    return (typeof value === 'undefined' ? 'undefined' : _typeof(value)) == 'object' && value !== null && !isArray(value) && !(value instanceof RegExp) && !(value instanceof Date) && !(value instanceof Error) && !(value instanceof Number) && !(value instanceof String) && !(value instanceof Boolean) && (typeof value.toDateTime !== 'function' || value.propertyIsEnumerable('toDateTime')); //Moment.js date
+}
+
+// Returns false if the object is `null` of `undefined`
+function isDefined(obj) {
+    return obj != null;
+}
+
+//Note! undefined is not empty
+function isEmpty(value) {
+    if (value === null || typeof value === 'number' && isNaN(value)) {
+        return true;
     }
-    return objects.join(' ');
-  }
 
-  var i = 1;
-  var args = arguments;
-  var len = args.length;
-  var str = String(f).replace(formatRegExp, function(x) {
-    if (x === '%%') return '%';
-    if (i >= len) return x;
-    switch (x) {
-      case '%s': return String(args[i++]);
-      case '%d': return Number(args[i++]);
-      case '%j':
+    if (isString(value)) {
+        return (/^\s*$/.test(value)
+        ); //Whitespace only strings are empty
+    }
+
+    if (isArray(value)) {
+        return value.length === 0;
+    }
+
+    if (isPlainObject(value)) {
+        //If we find at least one property we consider it non empty
+        for (var attr in value) {
+            return false;
+        }
+        return true;
+    }
+
+    return value instanceof Date && isNaN(Date.parse(value)); //Invalid date is empty
+
+    //Boolean, Date, RegExp, Error, Number, Function etc. are not empty
+}
+
+function exists(value) {
+    return value !== undefined && !isEmpty(value);
+}
+
+function contains(collection, value, some) {
+    some = some ? 'some' : 'every';
+
+    if (!isDefined(collection)) {
+        return false;
+    }
+
+    if ((typeof value === 'undefined' ? 'undefined' : _typeof(value)) === 'object') {
+        return toArray(value)[some](function (val) {
+            return contains(collection, val);
+        });
+    }
+
+    return toArray(collection).indexOf(value) !== -1;
+}
+
+function deepEqual(actual, expected, strict) {
+    if (strict !== false) {
+        strict = true;
+    }
+
+    if (actual === expected) {
+        return true;
+    } else if (actual instanceof Date && expected instanceof Date) {
+        return actual.getTime() === expected.getTime();
+    } else if (!actual || !expected || (typeof actual === 'undefined' ? 'undefined' : _typeof(actual)) != 'object' && (typeof expected === 'undefined' ? 'undefined' : _typeof(expected)) != 'object') {
+        return strict ? actual === expected : actual == expected;
+    } else {
+        return objEqual(actual, expected, strict);
+    }
+}
+
+function objEqual(a, b, strict) {
+    var i, key;
+
+    if (!isDefined(a) || !isDefined(b)) {
+        return false;
+    }
+
+    if (a.prototype !== b.prototype) return false;
+
+    try {
+        var ka = Object.keys(a),
+            kb = Object.keys(b);
+    } catch (e) {
+        //happens when one is a string literal and the other isn't
+        return false;
+    }
+
+    if (ka.length !== kb.length) return false;
+
+    ka.sort();
+    kb.sort();
+
+    //cheap key test
+    for (i = ka.length - 1; i >= 0; i--) {
+        if (ka[i] != kb[i]) return false;
+    }
+
+    //possibly expensive deep test
+    for (i = ka.length - 1; i >= 0; i--) {
+        key = ka[i];
+        if (!deepEqual(a[key], b[key], strict)) return false;
+    }
+
+    return (typeof a === 'undefined' ? 'undefined' : _typeof(a)) === (typeof b === 'undefined' ? 'undefined' : _typeof(b));
+}
+
+/** Used to compose unicode character classes. */
+var rsAstralRange = '\\ud800-\\udfff',
+    rsComboMarksRange = '\\u0300-\\u036f\\ufe20-\\ufe23',
+    rsComboSymbolsRange = '\\u20d0-\\u20f0',
+    rsVarRange = '\\ufe0e\\ufe0f';
+
+/** Used to compose unicode capture groups. */
+var rsAstral = '[' + rsAstralRange + ']',
+    rsCombo = '[' + rsComboMarksRange + rsComboSymbolsRange + ']',
+    rsFitz = '\\ud83c[\\udffb-\\udfff]',
+    rsModifier = '(?:' + rsCombo + '|' + rsFitz + ')',
+    rsNonAstral = '[^' + rsAstralRange + ']',
+    rsRegional = '(?:\\ud83c[\\udde6-\\uddff]){2}',
+    rsSurrPair = '[\\ud800-\\udbff][\\udc00-\\udfff]',
+    rsZWJ = '\\u200d';
+
+/** Used to compose unicode regexes. */
+var reOptMod = rsModifier + '?',
+    rsOptVar = '[' + rsVarRange + ']?',
+    rsOptJoin = '(?:' + rsZWJ + '(?:' + [rsNonAstral, rsRegional, rsSurrPair].join('|') + ')' + rsOptVar + reOptMod + ')*',
+    rsSeq = rsOptVar + reOptMod + rsOptJoin,
+    rsSymbol = '(?:' + [rsNonAstral + rsCombo + '?', rsCombo, rsRegional, rsSurrPair, rsAstral].join('|') + ')';
+
+var reHasUnicode = RegExp('[' + rsZWJ + rsAstralRange + rsComboMarksRange + rsComboSymbolsRange + rsVarRange + ']');
+var reUnicode = RegExp(rsFitz + '(?=' + rsFitz + ')|' + rsSymbol + rsSeq, 'g');
+
+function toArray(value) {
+    if (!value) {
+        return [];
+    }
+
+    if (isArray(value)) {
+        return value;
+    }
+
+    if (isString(value)) {
+        return reHasUnicode.test(value) ? string.match(reUnicode) || [] : value.split('');
+    }
+
+    if (Array.from && (value.length || value instanceof Map || value instanceof Set || value[Symbol && Symbol.iterator])) {
+        return Array.from(value);
+    }
+
+    return Object.keys(value);
+}
+
+function toNumber(value) {
+    return Number(value);
+}
+
+function toString(value) {
+    return value && !isObject(value) ? String(value) : '';
+}
+
+function toObject(value) {
+    return isObject(value) ? value : {};
+}
+
+function byteLength(str) {
+    str = str ? typeof str === 'string' ? str : JSON.stringify(str) : '';
+    // returns the byte length of an utf8 string
+    var s = str.length;
+    for (var i = str.length - 1; i >= 0; i--) {
+        var code = str.charCodeAt(i);
+        if (code > 0x7f && code <= 0x7ff) s++;else if (code > 0x7ff && code <= 0xffff) s += 2;
+    }
+    return s;
+}
+
+/* Export */
+module.exports = {
+    validators: validators,
+    util: util
+};
+},{"normalize-date":14}],12:[function(require,module,exports){
+'use strict';
+
+var validatorsLibrary = require('./common-validators-library');
+var validators = require('validators-constructor')();
+
+validators.util = validatorsLibrary.util;
+
+module.exports = validators.add(validatorsLibrary.validators);
+},{"./common-validators-library":11,"validators-constructor":13}],13:[function(require,module,exports){
+'use strict';
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+
+var FORMAT_REGEXP = /(%?)%\{([^\}]+)\}/g; // Finds %{key} style patterns in the given string
+var MESSAGE_REGEXP = /message/i;
+var hiddenPropertySettings = {
+    enumerable: false,
+    configurable: false,
+    writable: true
+};
+var RESULT_HANDLER = 'resultHandler';
+var EXCEPTION_HANDLER = 'exceptionHandler';
+var ERROR_FORMAT = 'errorFormat';
+var MESSAGE = 'message';
+var SIMPLE_ARGS_FORMAT = 'simpleArgsFormat';
+var ARG = 'arg';
+
+/**
+ * Add extra advantages to validator
+ *
+ * @param {Object}   validators - validators library
+ * @param {String}   name - validator's name
+ * @param {Function} validator - user validator
+ *
+ * @returns {Function} extended validator
+ */
+function validatorWrapper(validators, name, validator) {
+    return function (value, options) {
+        var error = void 0,
+            args = arguments;
+        var alias = this && this.alias;
+        var validatorObj = validators[name];
+        var validatorAliasObj = alias ? validators[alias] : {};
+        var arg = validatorObj[ARG] || validatorAliasObj[ARG] || validators[ARG];
+        var isSimpleArgsFormat = validatorObj[SIMPLE_ARGS_FORMAT] || validatorAliasObj[SIMPLE_ARGS_FORMAT] || validators[SIMPLE_ARGS_FORMAT];
+
+        options = Object.assign({}, validatorObj.defaultOptions, validatorAliasObj.defaultOptions, options);
+
+        if (typeof options.parse === 'function') {
+            value = options.parse(value);
+        }
+
+        if (options.hasOwnProperty(arg) && !isSimpleArgsFormat) {
+            args = [value, options[arg]].concat(Array.prototype.slice.call(arguments, 1));
+        }
+
         try {
-          return JSON.stringify(args[i++]);
-        } catch (_) {
-          return '[Circular]';
+            var resultHandler = validatorObj[RESULT_HANDLER] || validatorAliasObj[RESULT_HANDLER] || validators[RESULT_HANDLER];
+
+            error = resultHandler(validator.apply(validators, args));
+        } catch (err) {
+            var exceptionHandler = validatorObj[EXCEPTION_HANDLER] || validatorAliasObj[EXCEPTION_HANDLER] || validators[EXCEPTION_HANDLER];
+
+            if (typeof exceptionHandler === 'function') {
+                error = exceptionHandler(err);
+            } else {
+                throw err;
+            }
         }
-      default:
-        return x;
-    }
-  });
-  for (var x = args[i]; i < len; x = args[++i]) {
-    if (isNull(x) || !isObject(x)) {
-      str += ' ' + x;
-    } else {
-      str += ' ' + inspect(x);
-    }
-  }
-  return str;
-};
 
+        function handleError(error) {
+            if (error) {
+                var _ret = function () {
+                    var errorObj = (typeof error === 'undefined' ? 'undefined' : _typeof(error)) === 'object' ? error : null; //in case if we rewrite message in options and want to use fields from error object in the placeholders
+                    var message = options[MESSAGE] || validatorObj[MESSAGE] || validatorAliasObj[MESSAGE];
 
-// Mark that a method should not be used.
-// Returns a modified function which warns once by default.
-// If --no-deprecation is set, then it is a no-op.
-exports.deprecate = function(fn, msg) {
-  // Allow for deprecating things in the process of starting up.
-  if (isUndefined(global.process)) {
-    return function() {
-      return exports.deprecate(fn, msg).apply(this, arguments);
+                    if (message) {
+                        error = message;
+                    }
+
+                    var formattedErrorMessage = validators.formatMessage(error, Object.assign({ validator: alias || name, value: value }, errorObj, options));
+                    var format = validatorObj[ERROR_FORMAT] || validatorAliasObj[ERROR_FORMAT] || validators[ERROR_FORMAT];
+
+                    if (format) {
+                        if (typeof formattedErrorMessage === 'string') {
+                            formattedErrorMessage = { message: formattedErrorMessage };
+                        }
+
+                        if (format.$options) {
+                            format = Object.assign({}, format);
+
+                            Object.keys(options).forEach(function (key) {
+                                if (!MESSAGE_REGEXP.test(key) && typeof options[key] !== 'function') {
+                                    format[key] = options[key];
+                                }
+                            });
+                        }
+                        delete format.$options;
+
+                        if (format.$origin) {
+                            format = Object.assign({}, format, formattedErrorMessage);
+                        }
+                        delete format.$origin;
+
+                        return {
+                            v: validators.formatMessage(format, Object.assign({ validator: alias || name, value: value }, options, formattedErrorMessage))
+                        };
+                    }
+
+                    return {
+                        v: formattedErrorMessage
+                    };
+                }();
+
+                if ((typeof _ret === 'undefined' ? 'undefined' : _typeof(_ret)) === "object") return _ret.v;
+            }
+        }
+
+        return (typeof error === 'undefined' ? 'undefined' : _typeof(error)) === 'object' && typeof error.then === 'function' ? error.then(handleError) : handleError(error);
     };
-  }
-
-  if (process.noDeprecation === true) {
-    return fn;
-  }
-
-  var warned = false;
-  function deprecated() {
-    if (!warned) {
-      if (process.throwDeprecation) {
-        throw new Error(msg);
-      } else if (process.traceDeprecation) {
-        console.trace(msg);
-      } else {
-        console.error(msg);
-      }
-      warned = true;
-    }
-    return fn.apply(this, arguments);
-  }
-
-  return deprecated;
-};
-
-
-var debugs = {};
-var debugEnviron;
-exports.debuglog = function(set) {
-  if (isUndefined(debugEnviron))
-    debugEnviron = process.env.NODE_DEBUG || '';
-  set = set.toUpperCase();
-  if (!debugs[set]) {
-    if (new RegExp('\\b' + set + '\\b', 'i').test(debugEnviron)) {
-      var pid = process.pid;
-      debugs[set] = function() {
-        var msg = exports.format.apply(exports, arguments);
-        console.error('%s %d: %s', set, pid, msg);
-      };
-    } else {
-      debugs[set] = function() {};
-    }
-  }
-  return debugs[set];
-};
-
+}
 
 /**
- * Echos the value of a value. Trys to print the value out
- * in the best way possible given the different types.
+ * Format string with patterns
  *
- * @param {Object} obj The object to print out.
- * @param {Object} opts Optional options object that alters the output.
+ * @param {String} str ("I'm %{age} years old")
+ * @param {Object} [values] ({age: 21})
+ *
+ * @returns {String} formatted string ("I'm 21 years old")
  */
-/* legacy: obj, showHidden, depth, colors*/
-function inspect(obj, opts) {
-  // default options
-  var ctx = {
-    seen: [],
-    stylize: stylizeNoColor
-  };
-  // legacy...
-  if (arguments.length >= 3) ctx.depth = arguments[2];
-  if (arguments.length >= 4) ctx.colors = arguments[3];
-  if (isBoolean(opts)) {
-    // legacy...
-    ctx.showHidden = opts;
-  } else if (opts) {
-    // got an "options" object
-    exports._extend(ctx, opts);
-  }
-  // set default options
-  if (isUndefined(ctx.showHidden)) ctx.showHidden = false;
-  if (isUndefined(ctx.depth)) ctx.depth = 2;
-  if (isUndefined(ctx.colors)) ctx.colors = false;
-  if (isUndefined(ctx.customInspect)) ctx.customInspect = true;
-  if (ctx.colors) ctx.stylize = stylizeWithColor;
-  return formatValue(ctx, obj, ctx.depth);
-}
-exports.inspect = inspect;
+function formatStr(str, values) {
+    values = values || {};
 
-
-// http://en.wikipedia.org/wiki/ANSI_escape_code#graphics
-inspect.colors = {
-  'bold' : [1, 22],
-  'italic' : [3, 23],
-  'underline' : [4, 24],
-  'inverse' : [7, 27],
-  'white' : [37, 39],
-  'grey' : [90, 39],
-  'black' : [30, 39],
-  'blue' : [34, 39],
-  'cyan' : [36, 39],
-  'green' : [32, 39],
-  'magenta' : [35, 39],
-  'red' : [31, 39],
-  'yellow' : [33, 39]
-};
-
-// Don't use 'blue' not visible on cmd.exe
-inspect.styles = {
-  'special': 'cyan',
-  'number': 'yellow',
-  'boolean': 'yellow',
-  'undefined': 'grey',
-  'null': 'bold',
-  'string': 'green',
-  'date': 'magenta',
-  // "name": intentionally not styling
-  'regexp': 'red'
-};
-
-
-function stylizeWithColor(str, styleType) {
-  var style = inspect.styles[styleType];
-
-  if (style) {
-    return '\u001b[' + inspect.colors[style][0] + 'm' + str +
-           '\u001b[' + inspect.colors[style][1] + 'm';
-  } else {
-    return str;
-  }
-}
-
-
-function stylizeNoColor(str, styleType) {
-  return str;
-}
-
-
-function arrayToHash(array) {
-  var hash = {};
-
-  array.forEach(function(val, idx) {
-    hash[val] = true;
-  });
-
-  return hash;
-}
-
-
-function formatValue(ctx, value, recurseTimes) {
-  // Provide a hook for user-specified inspect functions.
-  // Check that value is an object with an inspect function on it
-  if (ctx.customInspect &&
-      value &&
-      isFunction(value.inspect) &&
-      // Filter out the util module, it's inspect function is special
-      value.inspect !== exports.inspect &&
-      // Also filter out any prototype objects using the circular check.
-      !(value.constructor && value.constructor.prototype === value)) {
-    var ret = value.inspect(recurseTimes, ctx);
-    if (!isString(ret)) {
-      ret = formatValue(ctx, ret, recurseTimes);
+    if (typeof str !== 'string') {
+        return str;
     }
-    return ret;
-  }
 
-  // Primitive types cannot have properties
-  var primitive = formatPrimitive(ctx, value);
-  if (primitive) {
-    return primitive;
-  }
-
-  // Look up the keys of the object.
-  var keys = Object.keys(value);
-  var visibleKeys = arrayToHash(keys);
-
-  if (ctx.showHidden) {
-    keys = Object.getOwnPropertyNames(value);
-  }
-
-  // IE doesn't make error fields non-enumerable
-  // http://msdn.microsoft.com/en-us/library/ie/dww52sbt(v=vs.94).aspx
-  if (isError(value)
-      && (keys.indexOf('message') >= 0 || keys.indexOf('description') >= 0)) {
-    return formatError(value);
-  }
-
-  // Some type of object without properties can be shortcutted.
-  if (keys.length === 0) {
-    if (isFunction(value)) {
-      var name = value.name ? ': ' + value.name : '';
-      return ctx.stylize('[Function' + name + ']', 'special');
-    }
-    if (isRegExp(value)) {
-      return ctx.stylize(RegExp.prototype.toString.call(value), 'regexp');
-    }
-    if (isDate(value)) {
-      return ctx.stylize(Date.prototype.toString.call(value), 'date');
-    }
-    if (isError(value)) {
-      return formatError(value);
-    }
-  }
-
-  var base = '', array = false, braces = ['{', '}'];
-
-  // Make Array say that they are Array
-  if (isArray(value)) {
-    array = true;
-    braces = ['[', ']'];
-  }
-
-  // Make functions say that they are functions
-  if (isFunction(value)) {
-    var n = value.name ? ': ' + value.name : '';
-    base = ' [Function' + n + ']';
-  }
-
-  // Make RegExps say that they are RegExps
-  if (isRegExp(value)) {
-    base = ' ' + RegExp.prototype.toString.call(value);
-  }
-
-  // Make dates with properties first say the date
-  if (isDate(value)) {
-    base = ' ' + Date.prototype.toUTCString.call(value);
-  }
-
-  // Make error with message first say the error
-  if (isError(value)) {
-    base = ' ' + formatError(value);
-  }
-
-  if (keys.length === 0 && (!array || value.length == 0)) {
-    return braces[0] + base + braces[1];
-  }
-
-  if (recurseTimes < 0) {
-    if (isRegExp(value)) {
-      return ctx.stylize(RegExp.prototype.toString.call(value), 'regexp');
-    } else {
-      return ctx.stylize('[Object]', 'special');
-    }
-  }
-
-  ctx.seen.push(value);
-
-  var output;
-  if (array) {
-    output = formatArray(ctx, value, recurseTimes, visibleKeys, keys);
-  } else {
-    output = keys.map(function(key) {
-      return formatProperty(ctx, value, recurseTimes, visibleKeys, key, array);
+    return str.replace(FORMAT_REGEXP, function (m0, m1, m2) {
+        return m1 === '%' ? "%{" + m2 + "}" : values[m2];
     });
-  }
-
-  ctx.seen.pop();
-
-  return reduceToSingleString(output, base, braces);
 }
-
-
-function formatPrimitive(ctx, value) {
-  if (isUndefined(value))
-    return ctx.stylize('undefined', 'undefined');
-  if (isString(value)) {
-    var simple = '\'' + JSON.stringify(value).replace(/^"|"$/g, '')
-                                             .replace(/'/g, "\\'")
-                                             .replace(/\\"/g, '"') + '\'';
-    return ctx.stylize(simple, 'string');
-  }
-  if (isNumber(value))
-    return ctx.stylize('' + value, 'number');
-  if (isBoolean(value))
-    return ctx.stylize('' + value, 'boolean');
-  // For some reason typeof null is "object", so special case here.
-  if (isNull(value))
-    return ctx.stylize('null', 'null');
-}
-
-
-function formatError(value) {
-  return '[' + Error.prototype.toString.call(value) + ']';
-}
-
-
-function formatArray(ctx, value, recurseTimes, visibleKeys, keys) {
-  var output = [];
-  for (var i = 0, l = value.length; i < l; ++i) {
-    if (hasOwnProperty(value, String(i))) {
-      output.push(formatProperty(ctx, value, recurseTimes, visibleKeys,
-          String(i), true));
-    } else {
-      output.push('');
-    }
-  }
-  keys.forEach(function(key) {
-    if (!key.match(/^\d+$/)) {
-      output.push(formatProperty(ctx, value, recurseTimes, visibleKeys,
-          key, true));
-    }
-  });
-  return output;
-}
-
-
-function formatProperty(ctx, value, recurseTimes, visibleKeys, key, array) {
-  var name, str, desc;
-  desc = Object.getOwnPropertyDescriptor(value, key) || { value: value[key] };
-  if (desc.get) {
-    if (desc.set) {
-      str = ctx.stylize('[Getter/Setter]', 'special');
-    } else {
-      str = ctx.stylize('[Getter]', 'special');
-    }
-  } else {
-    if (desc.set) {
-      str = ctx.stylize('[Setter]', 'special');
-    }
-  }
-  if (!hasOwnProperty(visibleKeys, key)) {
-    name = '[' + key + ']';
-  }
-  if (!str) {
-    if (ctx.seen.indexOf(desc.value) < 0) {
-      if (isNull(recurseTimes)) {
-        str = formatValue(ctx, desc.value, null);
-      } else {
-        str = formatValue(ctx, desc.value, recurseTimes - 1);
-      }
-      if (str.indexOf('\n') > -1) {
-        if (array) {
-          str = str.split('\n').map(function(line) {
-            return '  ' + line;
-          }).join('\n').substr(2);
-        } else {
-          str = '\n' + str.split('\n').map(function(line) {
-            return '   ' + line;
-          }).join('\n');
-        }
-      }
-    } else {
-      str = ctx.stylize('[Circular]', 'special');
-    }
-  }
-  if (isUndefined(name)) {
-    if (array && key.match(/^\d+$/)) {
-      return str;
-    }
-    name = JSON.stringify('' + key);
-    if (name.match(/^"([a-zA-Z_][a-zA-Z_0-9]*)"$/)) {
-      name = name.substr(1, name.length - 2);
-      name = ctx.stylize(name, 'name');
-    } else {
-      name = name.replace(/'/g, "\\'")
-                 .replace(/\\"/g, '"')
-                 .replace(/(^"|"$)/g, "'");
-      name = ctx.stylize(name, 'string');
-    }
-  }
-
-  return name + ': ' + str;
-}
-
-
-function reduceToSingleString(output, base, braces) {
-  var numLinesEst = 0;
-  var length = output.reduce(function(prev, cur) {
-    numLinesEst++;
-    if (cur.indexOf('\n') >= 0) numLinesEst++;
-    return prev + cur.replace(/\u001b\[\d\d?m/g, '').length + 1;
-  }, 0);
-
-  if (length > 60) {
-    return braces[0] +
-           (base === '' ? '' : base + '\n ') +
-           ' ' +
-           output.join(',\n  ') +
-           ' ' +
-           braces[1];
-  }
-
-  return braces[0] + base + ' ' + output.join(', ') + ' ' + braces[1];
-}
-
-
-// NOTE: These type checking functions intentionally don't use `instanceof`
-// because it is fragile and can be easily faked with `Object.create()`.
-function isArray(ar) {
-  return Array.isArray(ar);
-}
-exports.isArray = isArray;
-
-function isBoolean(arg) {
-  return typeof arg === 'boolean';
-}
-exports.isBoolean = isBoolean;
-
-function isNull(arg) {
-  return arg === null;
-}
-exports.isNull = isNull;
-
-function isNullOrUndefined(arg) {
-  return arg == null;
-}
-exports.isNullOrUndefined = isNullOrUndefined;
-
-function isNumber(arg) {
-  return typeof arg === 'number';
-}
-exports.isNumber = isNumber;
-
-function isString(arg) {
-  return typeof arg === 'string';
-}
-exports.isString = isString;
-
-function isSymbol(arg) {
-  return typeof arg === 'symbol';
-}
-exports.isSymbol = isSymbol;
-
-function isUndefined(arg) {
-  return arg === void 0;
-}
-exports.isUndefined = isUndefined;
-
-function isRegExp(re) {
-  return isObject(re) && objectToString(re) === '[object RegExp]';
-}
-exports.isRegExp = isRegExp;
-
-function isObject(arg) {
-  return typeof arg === 'object' && arg !== null;
-}
-exports.isObject = isObject;
-
-function isDate(d) {
-  return isObject(d) && objectToString(d) === '[object Date]';
-}
-exports.isDate = isDate;
-
-function isError(e) {
-  return isObject(e) &&
-      (objectToString(e) === '[object Error]' || e instanceof Error);
-}
-exports.isError = isError;
-
-function isFunction(arg) {
-  return typeof arg === 'function';
-}
-exports.isFunction = isFunction;
-
-function isPrimitive(arg) {
-  return arg === null ||
-         typeof arg === 'boolean' ||
-         typeof arg === 'number' ||
-         typeof arg === 'string' ||
-         typeof arg === 'symbol' ||  // ES6 symbol
-         typeof arg === 'undefined';
-}
-exports.isPrimitive = isPrimitive;
-
-exports.isBuffer = require('./support/isBuffer');
-
-function objectToString(o) {
-  return Object.prototype.toString.call(o);
-}
-
-
-function pad(n) {
-  return n < 10 ? '0' + n.toString(10) : n.toString(10);
-}
-
-
-var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep',
-              'Oct', 'Nov', 'Dec'];
-
-// 26 Feb 16:19:34
-function timestamp() {
-  var d = new Date();
-  var time = [pad(d.getHours()),
-              pad(d.getMinutes()),
-              pad(d.getSeconds())].join(':');
-  return [d.getDate(), months[d.getMonth()], time].join(' ');
-}
-
-
-// log is just a thin wrapper to console.log that prepends a timestamp
-exports.log = function() {
-  console.log('%s - %s', timestamp(), exports.format.apply(exports, arguments));
-};
-
 
 /**
- * Inherit the prototype methods from one constructor into another.
+ * Check that value is plain object
  *
- * The Function.prototype.inherits from lang.js rewritten as a standalone
- * function (not on Function.prototype). NOTE: If this file is to be loaded
- * during bootstrapping this function needs to be rewritten using some native
- * functions as prototype setup using normal JavaScript does not work as
- * expected during bootstrapping (see mirror.js in r114903).
+ * @param {Any} value
  *
- * @param {function} ctor Constructor function which needs to inherit the
- *     prototype.
- * @param {function} superCtor Constructor function to inherit prototype from.
+ * @returns {Boolean}
  */
-exports.inherits = require('inherits');
-
-exports._extend = function(origin, add) {
-  // Don't do anything if add isn't an object
-  if (!add || !isObject(add)) return origin;
-
-  var keys = Object.keys(add);
-  var i = keys.length;
-  while (i--) {
-    origin[keys[i]] = add[keys[i]];
-  }
-  return origin;
-};
-
-function hasOwnProperty(obj, prop) {
-  return Object.prototype.hasOwnProperty.call(obj, prop);
+function isPlainObject(value) {
+    return {}.toString.call(value) === '[object Object]' && (typeof value.toDate !== 'function' || value.propertyIsEnumerable('toDate')); //For moment.js dates
 }
 
-}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":14,"_process":13,"inherits":12}]},{},[11])(11)
+/**
+ * Validators constructor
+ *
+ * @param {Object}          [params]
+ * @param {Object}            [errorFormat] - format of validators result
+ * @param {Function}          [formatStr] - for format message strings with patterns
+ * @param {Function}          [resultHandler] - handle result of validation
+ * @param {Function|String}   [exceptionHandler] - handle JS exceptions
+ * @param {String}            [simpleArgsFormat] - don't map arg to options.arg or vice versa
+ * @param {String}            [arg] - name of compared value
+ * @param {Object}            [util] - reserved for validator's libraries helpers
+ *
+ * @constructor
+ */
+function Validators(params) {
+    Object.defineProperties(this, {
+        errorFormat: hiddenPropertySettings,
+        formatStr: hiddenPropertySettings,
+        resultHandler: hiddenPropertySettings,
+        exceptionHandler: hiddenPropertySettings,
+        arg: hiddenPropertySettings,
+        ignoreOptionsAfterArg: hiddenPropertySettings,
+        util: hiddenPropertySettings
+    });
+
+    this.errorFormat = {
+        error: '%{validator}',
+        message: '%{message}',
+        $options: true,
+        $origin: true
+    };
+    this.formatStr = formatStr;
+    this.resultHandler = function (result) {
+        return result;
+    };
+    this.arg = 'arg';
+    this.util = {};
+
+    Object.assign(this, params);
+}
+
+/**
+ * @param {String} name of validator
+ * @param {Function|String|Array} validator, alias or validators array
+ * @param {Object} params
+ *
+ * @returns {Validators} Validators instance
+ */
+function addValidator(name, validator, params) {
+    var _this = this;
+    var validators = validator instanceof Array ? validator : [validator];
+    var validate = void 0;
+
+    if (typeof validator === 'string') {
+        validate = function validate() /*value, arg, options*/{
+            return _this[validator].apply({ alias: name, _this: _this }, arguments);
+        };
+    } else {
+        validate = function validate(value /*arg, options*/) {
+            var args = Array.prototype.slice.call(arguments, 2);
+            var arg1 = arguments[1];
+            var arg2 = arguments[2];
+            var _this2 = this && this._this || _this;
+            var isSimpleArgsFormat = _this2[name][SIMPLE_ARGS_FORMAT] || _this2[SIMPLE_ARGS_FORMAT];
+            var options = !isSimpleArgsFormat && isPlainObject(arg2) ? arg2 : {};
+
+            if (arg1 != null && typeof arg1 !== 'boolean') {
+                if (isPlainObject(arg1) || isSimpleArgsFormat) {
+                    options = arg1;
+                } else {
+                    options[_this2[name][ARG] || _this2[ARG]] = arg1;
+                    args.shift();
+                }
+            }
+
+            for (var i = 0; i < validators.length; i++) {
+                var base = validators[i];
+
+                switch (typeof base === 'undefined' ? 'undefined' : _typeof(base)) {
+                    case 'function':
+                        validator = validatorWrapper(_this2, name, base);break;
+
+                    case 'string':
+                        validator = _this2[base];break;
+
+                    case 'object':
+                        validator = _this2[base[0]];
+                        options = Object.assign({}, options, base[1]);
+                }
+
+                var error = validator.apply(this, [value, options].concat(args));
+
+                if (error) {
+                    return error;
+                }
+            }
+        };
+    }
+
+    Object.assign(validate, params);
+
+    validate.curry = function () /*arg, options*/{
+        var _arguments = arguments;
+        //Partial application
+        return function (value) {
+            return validate.apply(_this, [value].concat(Array.prototype.slice.call(_arguments)));
+        };
+    };
+
+    _this[name] = validate;
+}
+
+/**
+ * @param {String|Object} validatorName or validators map like {validator1: validator1Fn, validator2: validator2Fn, ...}
+ * @param {Object} params for every validator
+ *
+ * @returns {Validators} Validators instance
+ */
+Validators.prototype.add = function (validatorName, validators, params) {
+    var _this3 = this;
+
+    if (typeof validatorName === 'string') {
+        addValidator.call(this, validatorName, validators, params);
+    } else {
+        Object.keys(validatorName).forEach(function (key) {
+            return addValidator.call(_this3, key, validatorName[key], validators);
+        });
+    }
+
+    return this;
+};
+
+/**
+ * Format any structure which contains pattern strings
+ *
+ * @param {String|Object|Function} message. Object will be processed recursively. Function will be executed
+ * @param {Object} [values]
+ *
+ * @returns {String|Object} formatted string or object
+ */
+Validators.prototype.formatMessage = function (message, values) {
+    var _this4 = this;
+
+    if (typeof message === 'function') {
+        message = message(values.value, values);
+    }
+
+    if ((typeof message === 'undefined' ? 'undefined' : _typeof(message)) === 'object') {
+        var formattedMessage = {};
+
+        Object.keys(message).forEach(function (key) {
+            return formattedMessage[_this4.formatStr(key, values)] = _this4.formatStr(message[key], values);
+        });
+
+        if (message[MESSAGE]) {
+            //Show not enumerable message of JS exception
+            formattedMessage[MESSAGE] = this.formatStr(message[MESSAGE], values);
+        }
+
+        return formattedMessage;
+    }
+
+    return this.formatStr(message, values);
+};
+
+module.exports = function (options) {
+    return new Validators(options);
+};
+},{}],14:[function(require,module,exports){
+'use strict';
+
+function setTimezoneOffset(date) {
+    date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+}
+
+function normalizeDateTime(date) {
+    if (!date) {
+        return new Date(date);
+    }
+
+    if (arguments.length > 1) {
+        date = Array.prototype.slice.call(arguments);
+    }
+
+    if (Array.isArray(date)) {
+        date = new (Function.prototype.bind.apply(Date, [null].concat(date)))();
+    }
+
+    var jsDate = new Date(date);
+
+    if (date === Object(date)) {
+        //Native or Moment.js date
+        var momentBaseDate = date.creationData && date.creationData().input;
+
+        if (!(momentBaseDate && (typeof momentBaseDate === 'number' || typeof momentBaseDate === 'string' && /:.+Z|GMT|[+-]\d\d:\d\d/.test(momentBaseDate)))) {
+            setTimezoneOffset(jsDate); //Any data except moment.js date from timestamp or UTC string (UTC ISO format have to contains time)
+        }
+
+        return jsDate;
+    }
+
+    if (!isNaN(jsDate) && typeof date === 'string') {
+        //ISO or RFC
+        if (date.match(/Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec/) && date.indexOf('GMT') === -1) {
+            //RFC without GMT
+            setTimezoneOffset(jsDate);
+        }
+    } else {
+        //Timestamp (always in UTC)
+        jsDate = new Date(Number(String(date).split('.').join('')));
+    }
+
+    return jsDate;
+}
+
+function normalizeDate(date, options) {
+    date = normalizeDateTime(date);
+
+    return (options || {}).noTime ? new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()) : date;
+}
+
+module.exports = normalizeDate;
+},{}]},{},[10])(10)
 });

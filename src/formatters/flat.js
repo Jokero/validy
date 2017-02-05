@@ -2,23 +2,23 @@
 
 /**
  * @param {Object} object
- * @param {String} [path='']
- * @param {Object} [flattenObject={}]
+ * @param {string} [path='']
+ * @param {Object} [flatObject={}]
  * 
  * @returns {Object}
  */
-function flatten(object, path='', flattenObject={}) {
+function flatten(object, path='', flatObject={}) {
     Object.keys(object).forEach(propertyName => {
         const propertyValue = object[propertyName];
 
         if (propertyValue instanceof Object && !(propertyValue instanceof Array)) {
-            flatten(propertyValue, path + propertyName + '.', flattenObject);
+            flatten(propertyValue, path + propertyName + '.', flatObject);
         } else {
-            flattenObject[path + propertyName] = propertyValue;
+            flatObject[path + propertyName] = propertyValue;
         }
     });
 
-    return flattenObject;
+    return flatObject;
 }
 
 /**

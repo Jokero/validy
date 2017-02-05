@@ -1,43 +1,46 @@
 'use strict';
 
-const validateObject = require('./validateObject');
-const errors         = require('./errors');
-const formatters     = require('./formatters');
+const validateObject  = require('./validateObject');
+const ValidationError = require('./validationError');
+const formatters      = require('./formatters');
 
-const DEFAULT_FORMAT  = 'nested';
-const DEFAULT_TIMEOUT = 10000;
+const DEFAULT_OPTIONS = {
+    format: 'flat',
+    reject: false
+};
 
 /**
- * @param {Object} object
- * @param {Object} schema
- * @param {Object} [options={}]
- * @param {String}   [options.format=nested]
- * @param {Number}   [options.timeout=10000]
+ * @param {Object}  object
+ * @param {Object}  schema
+ * @param {Object}  [options={}]
+ * @param {string}    [options.format=flat]
+ * @param {boolean}   [options.reject=false]
  *
  * @returns {Promise}
  */
 module.exports = function(object, schema, options={}) {
-    const format  = options.format  || DEFAULT_FORMAT;
-    const timeout = options.timeout || DEFAULT_TIMEOUT;
+    options = Object.assign({}, DEFAULT_OPTIONS, options);
 
     return new Promise((resolve, reject) => {
-        const formatter = formatters[format];
+        const formatter = formatters[options.format];
         if (!formatter) {
-            return reject(new Error('Unknown format ' + format));
+            return reject(new Error(`Unknown format ${options.format}`));
         }
 
-        const timeoutObject = setTimeout(() => {
-            reject(new errors.TimeoutError());
-        }, timeout);
-        
-        validateObject(object, schema, object, [], options)
-            .then(result => {
-                clearTimeout(timeoutObject);
-                resolve(formatter(result));
+        validateObject(object, schema, object, [])
+            .then(validationErrors => {
+                if (!validationErrors) {
+                    return resolve();
+                }
+
+                const formattedErrors = formatter(validationErrors);
+
+                if (options.reject) {
+                    reject(new ValidationError(formattedErrors));
+                } else {
+                    resolve(formattedErrors);
+                }
             })
-            .catch(err => {
-                clearTimeout(timeoutObject);
-                reject(err);
-            });
+            .catch(reject);
     });
 };
