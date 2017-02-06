@@ -52,13 +52,14 @@ const schema = {
     }
 };
 
-validy(objectToValidate, schema).then(errors => {
-    if (errors) {
-        // you have validation errors
-    } else {
-        // no errors
-    }
-});
+validy(objectToValidate, schema)
+    .then(errors => {
+        if (errors) {
+            // you have validation errors
+        } else {
+            // no errors
+        }
+    });
 ```
 
 ## Usage
@@ -75,7 +76,7 @@ validy(objectToValidate, schema).then(errors => {
 
 **Return value**
 
-(Promise) - Result of validation
+(Promise) - Result of validation. Promise is returned even for synchronous validation
 
 ### Validators
 
