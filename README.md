@@ -110,7 +110,7 @@ Examples of validators:
 - **exclusion** - value is not contained in black list
 - **email** - value is email address
 - **url** - value is URL
-- and many others...
+- and many others (see [common-validators#validators](https://github.com/tamtakoe/common-validators#validators))
 
 #### Custom validator
 
@@ -136,12 +136,6 @@ validy.validators.add({
         }
     }
 });
-```
-
-or by extending it:
-
-```js
-Object.assign(validy.validators, yourValidationLibrary);
 ```
 
 ## Build
