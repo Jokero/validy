@@ -82,22 +82,60 @@ validy(objectToValidate, schema)
 
 #### Built-in validators
 
-By default `validy` uses collection of simple and useful validators, it includes [common-validators](https://github.com/tamtakoe/common-validators) module.
+By default `validy` uses collection of simple and useful validators ([common-validators](https://github.com/tamtakoe/common-validators) module).
 
-// add description
+**NOTE**:
+The basic principle of built-in validators is that many of them (except `required`, `notEmpty` and type validators like `object`, `array`) consider empty values as **valid values**.
+Empty values:
+- `undefined`
+- `null`
+- `NaN`
+- `''`
+- `'   '` // whitespace only string
+- `[]`
+- `{}`
+
+Examples of validators:
+
+- **required (presence)** - validates that the value isn't `undefined`, `null`, `NaN`, empty or whitespace only string, empty array or object
+- **notEmpty** - like `required` but `undefined` is valid value. It is useful for PATCH requests
+- **object / array / string / number / integer / ...** - value is plain object, array, ...
+- **max** - value is less than maximum
+- **min** - value is greater than minimum
+- **range** - value is in range
+- **maxLength** - value length is greater than maximum
+- **minLength** - value length is greater than minimum
+- **pattern** - value matches the pattern
+- **inclusion** - value is contained in white list
+- **exclusion** - value is not contained in black list
+- **email** - value is email address
+- **url** - value is URL
+- and many others...
 
 #### Custom validator
 
-You can add your own validator by setting new property directly to `validators`:
+You can add your own validator:
 
 ```js
-validy.validators.lowercased = function(value) {
+validy.validators.add('lowercased', function(value) {
     if (typeof value === 'string') {
         if (value.toLowerCase() !== value) {
             return 'must be lowercased';
         }
     }
-};
+});
+
+// or
+
+validy.validators.add({
+    lowercased: function(value) {
+        if (typeof value === 'string') {
+            if (value.toLowerCase() !== value) {
+                return 'must be lowercased';
+            }
+        }
+    }
+});
 ```
 
 or by extending it:
