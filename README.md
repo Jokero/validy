@@ -66,15 +66,15 @@ validy(objectToValidate, schema)
 
 ### validy(object, schema, [options])
 
-**Parameters**
+#### Parameters
 
 * `object` (Object) - Object to validate
 * `schema` (Object) - Schema which defines how to validate object
 * `[options]` (Object) - Validation options
-    - `[format=flat]` (String) - Format of object with validation errors (`flat`, `nested`)
-    - `[reject=false]` (Boolean) - Should return fulfilled promise with errors (`by default`) or rejected with `ValidationError`?
+    - `[format=flat]` (string) - Format of object with validation errors (`flat`, `nested`)
+    - `[reject=false]` (boolean) - Should return fulfilled promise with errors (`by default`) or rejected with `ValidationError`?
 
-**Return value**
+#### Return value
 
 (Promise) - Result of validation. Promise is returned even for synchronous validation
 
