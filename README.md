@@ -134,7 +134,9 @@ validy.validators.add({
                 return 'must be lowercased';
             }
         }
-    }
+    },
+    
+    anotherValidator: function() { /**/ }
 });
 ```
 
