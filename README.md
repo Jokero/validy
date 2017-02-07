@@ -31,17 +31,15 @@ You can use the module with AMD/CommonJS or just use `window.validy`.
 
 ## Overview
 
-`validy` allows you to validate flat and nested objects using collection of default validators. 
-
-You can add your own validators. 
+`validy` allows you to validate flat and nested objects using collection of default validators and your own validators. 
 
 Validators can be asynchronous, you can do DB calls for example and so on.
 
 To validate object you should define schema. It's simple object with your constraints:
 
 ```js
-const objectToValidate = {
-    name: 'Fyodor Dostoyevsky'
+const book = { // object to validate
+    name: 'War and Peace'
 };
 
 const schema = {
@@ -52,7 +50,7 @@ const schema = {
     }
 };
 
-validy(objectToValidate, schema)
+validy(book, schema)
     .then(errors => {
         if (errors) {
             // you have validation errors
@@ -76,7 +74,7 @@ validy(objectToValidate, schema)
 
 #### Return value
 
-(Promise) - Result of validation. Promise is returned even for synchronous validation
+(Promise) - Result of validation. Promise is returned even for synchronous only validation
 
 ### Validators
 
@@ -85,17 +83,17 @@ validy(objectToValidate, schema)
 By default `validy` uses collection of simple and useful validators ([common-validators](https://github.com/tamtakoe/common-validators) module).
 
 **NOTE**:
-The basic principle of built-in validators is that many of them (except `required`, `notEmpty` and type validators like `object`, `array`) consider empty values as **valid values**.
-Empty values:
+The basic principle of built-in validators is that many of them (except `required`, `notEmpty` and type validators `object`, `array`, ...) consider empty values as **valid values**.
+Empty values are:
 - `undefined`
 - `null`
 - `NaN`
 - `''`
-- `'   '` // whitespace only string
+- `'   '` (whitespace only string)
 - `[]`
 - `{}`
 
-Examples of validators:
+Some of built-in validators:
 
 - **required (presence)** - validates that the value isn't `undefined`, `null`, `NaN`, empty or whitespace only string, empty array or object
 - **notEmpty** - like `required` but `undefined` is valid value. It is useful for PATCH requests
@@ -127,7 +125,7 @@ validy.validators.add('lowercased', function(value) {
 
 // or
 
-validy.validators.add({
+validy.validators.add({ // this way you can add several validators at once
     lowercased: function(value) {
         if (typeof value === 'string') {
             if (value.toLowerCase() !== value) {
