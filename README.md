@@ -296,7 +296,8 @@ And then just use it as any other validator:
 {
     name: {
         $validate: {
-            russianOnly: true // validator will be called only if its config is not equal to false/null/undefined
+            // validator will be called only if its config is not equal to false/null/undefined 
+            russianOnly: true
         }
     }
 }
