@@ -259,10 +259,17 @@ Object with `repeatPassword` property.
 You can add your own validator:
 
 ```js
-validy.validators.add('lowercased', function(value) {
+const util = validy.validators.util;
+
+validy.validators.add('russianOnly', function(value) {
+    if (util.exists(value) && !(new RegExp(arg)).test(toString(value))) {
+        return 'Does not match the pattern %{arg}';
+    }
+    
+    
     if (typeof value === 'string') {
-        if (value.toLowerCase() !== value) {
-            return 'must be lowercased';
+        if (!/^[а-яё]+$/i.test(value)) {
+            return 'must contain only Russian letters';
         }
     }
 });
@@ -270,10 +277,10 @@ validy.validators.add('lowercased', function(value) {
 // or
 
 validy.validators.add({ // this way you can add several validators at once
-    lowercased: function(value) {
-        if (typeof value === 'string') {
-            if (value.toLowerCase() !== value) {
-                return 'must be lowercased';
+    russianOnly: function(value) {
+        if (typeof value === 'string' && value !== '') {
+            if (!/^[а-яё]+$/i.test(value)) {
+                return 'must contain only Russian letters';
             }
         }
     },
@@ -282,7 +289,52 @@ validy.validators.add({ // this way you can add several validators at once
 });
 ```
 
+And then just use it as any other validator:
+
+```js
+{
+    name: {
+        $validate: {
+            russianOnly: true // validator will be called only if its config is not equal to false/null/undefined
+        }
+    }
+}
+```
+
 ##### Asynchronous validator
+
+```js
+const util = validy.validators.util;
+
+validy.validators.add({
+    /**
+     * Check using mongoose model that value exists in mongodb 
+     * 
+     * @param {*}      value
+     * @param {Object} options
+     * @param {Object}   options.model - Mongoose model
+     * @param {string}   [options.field] - Which field to use for search
+     *
+     * @returns {Promise}
+     */
+    exists: function(value, options) {
+        if (!util.exists(value)) { // if value is empty, just return fulfilled promise without argument
+            return Promise.resolve();
+        }
+    
+        const model = options.model;
+        const field = options.field || '_id';
+    
+        return model.count({ [field]: value })
+            .then(count => {
+                if (!count) {
+                    // if value is invalid, return fulfilled promise with validation error
+                    return Promise.resolve('does not exist');
+                }
+            });
+    }
+});
+```
 
 ### Examples
 
