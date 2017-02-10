@@ -39,13 +39,23 @@ To validate object you should define schema. It's simple object with your constr
 
 ```js
 const book = { // object to validate
-    name: 'War and Peace'
+    name: 'The Adventures of Tom Sawyer',
+    author: {
+        name: 'Mark Twain'
+    }
 };
 
 const schema = {
     name: {
         $validate: {
             required: true
+        }
+    },
+    author: {
+        name: {
+            $validate: {
+                required: true
+            }
         }
     }
 };
@@ -57,7 +67,24 @@ validy(book, schema)
         } else {
             // no errors
         }
+    })
+    .catch(err => {
+        // application error (something went wrong)
     });
+
+// async/await example
+async function example() {
+    try {
+        const errors = await validy(book, schema);
+        if (errors) {
+            // you have validation errors
+        } else {
+            // no errors
+        }
+    } catch(err) {
+        // application error (something went wrong)
+    }
+}
 ```
 
 ## Usage
@@ -66,9 +93,9 @@ validy(book, schema)
 
 #### Parameters
 
-* `object` (Object) - Object to validate
-* `schema` (Object) - Schema which defines how to validate object
-* `[options]` (Object) - Validation options
+- `object` (Object) - Object to validate
+- `schema` (Object) - Schema which defines how to validate object
+- `[options]` (Object) - Validation options
     - `[format=flat]` (string) - Format of object with validation errors (`flat`, `nested`)
     - `[reject=false]` (boolean) - Should return fulfilled promise with errors (`by default`) or rejected with `ValidationError`?
 
@@ -82,7 +109,7 @@ validy(book, schema)
 
 By default `validy` uses collection of simple and useful validators ([common-validators](https://github.com/tamtakoe/common-validators) module).
 
-**NOTE**:
+**Note**:
 The basic principle of built-in validators is that many of them (except `required`, `notEmpty` and type validators `object`, `array`, ...) consider empty values as **valid values**.
 Empty values are:
 - `undefined`
@@ -92,6 +119,9 @@ Empty values are:
 - `'   '` (whitespace only string)
 - `[]`
 - `{}`
+
+Also they convert passed value to expected type. For example, `max` validator which checks that value is not greater than some limit will try to convert passed value to number (`Number(value)`).
+All non-convertible values will be treated as `NaN` and validator will return validation error.
 
 Some of built-in validators:
 
@@ -111,6 +141,119 @@ Some of built-in validators:
 - and many others (see [common-validators#validators](https://github.com/tamtakoe/common-validators#validators))
 
 #### Custom validator
+
+You can add your own validator:
+
+```js
+validy.validators.add('greaterThan', function(value, options) {
+    // validator implementation
+});
+
+// or
+
+validy.validators.add({ // this way you can add several validators at once
+    greaterThan: function(value, options) {
+        // validator implementation
+    },
+    anotherValidator: function(value, options) {
+        // validator implementation
+    }
+});
+```
+
+Although in most cases you will have only two parameters in your own validators (`value` and `options`), some situations will require a bit knowledgeable validator.
+So, full signature of validator is:
+
+##### validator(value, options, object, fullObject, path)
+
+- `value` (any) - Validated value
+- `options` (Object) - Validator options
+- `object` (Object) - Object whose property is validated at the moment
+- `fullObject` (Object) - The whole validated object (object which was initially passed to `validy`)
+- `path` (string[]) - Path to property
+
+Example:
+
+```js
+const user = { // object to validate
+    name: 'Dmitry',
+    credentials: {
+        password: 'the-safest-password-in-the-world',
+        repeatPassword: 'the-safest-password-in-the-world'
+    }
+};
+
+const schema = {
+    name: {
+        $validate: {
+            required: true,
+            string: true
+        }
+    },
+    credentials: {
+        password: {
+            $validate: {
+                required: true,
+                string: true,
+            }
+        },
+        repeatPassword: {
+            $validate: {
+                required: true,
+                string: true,
+                confirm: 'password'
+            }
+        }
+    }
+};
+```
+
+`confirm` validator will be called with the following arguments:
+
+1) value
+
+```js
+'the-safest-password-in-the-world' // value of "repeatPassword" property
+```
+
+2) options
+
+When you use non-object value as validator options it will be wrapped in object with `arg` property.
+```js
+{
+    arg: 'password'
+}
+```
+
+3) object
+
+Object with `repeatPassword` property.
+```js
+{
+    password: 'the-safest-password-in-the-world',
+    repeatPassword: 'the-safest-password-in-the-world'
+}
+```
+
+4) fullObject
+
+```js
+{
+    name: 'Dmitry',
+    credentials: {
+        password: 'the-safest-password-in-the-world',
+        repeatPassword: 'the-safest-password-in-the-world'
+    }
+}
+```
+
+5) path
+
+```js
+['credentials', 'repeatPassword']
+```
+
+##### Synchronous validator
 
 You can add your own validator:
 
@@ -136,6 +279,17 @@ validy.validators.add({ // this way you can add several validators at once
     
     anotherValidator: function() { /**/ }
 });
+```
+
+##### Asynchronous validator
+
+### Examples
+
+#### !!! показать работу опций
+
+#### Dynamic schema
+
+```js
 ```
 
 ## Build
