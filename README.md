@@ -338,6 +338,7 @@ validy.validators.add({
     }
 });
 ```
+#### Error format
 
 ### Examples
 
