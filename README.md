@@ -342,7 +342,7 @@ validy.validators.add({
 
 #### Return rejected promise instead of fulfilled
 
-If for some reasons you want to use rejected promise with validation error, specify `reject=true` option:
+If for some reasons you want to use rejected promise with validation error instead of fulfilled promise, specify `reject=true` option:
 
 ```js
 validy(object, schema)
