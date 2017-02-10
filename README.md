@@ -212,8 +212,9 @@ const schema = {
 
 1) value
 
+Value of "repeatPassword" property.
 ```js
-'the-safest-password-in-the-world' // value of "repeatPassword" property
+'the-safest-password-in-the-world' 
 ```
 
 2) options
