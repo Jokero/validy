@@ -303,6 +303,8 @@ And then just use it as any other validator:
 
 ##### Asynchronous validator
 
+Almost the same as synchronous validator, just return fulfilled promise:
+
 ```js
 const util = validy.validators.util;
 
@@ -338,7 +340,23 @@ validy.validators.add({
 
 ### Examples
 
-#### !!! показать работу опций
+#### Return rejected promise instead of fulfilled
+
+If for some reasons you want to use rejected promise with validation error, specify `reject=true` option:
+
+```js
+validy(object, schema)
+    .then(() => {
+        // no errors, everything is valid
+    })
+    .catch(err => {
+        if (err instanceof validy.ValidationError) {
+            // err.errors contains validation errors
+        } else {
+            // application error (something went wrong)            
+        }
+    });
+```
 
 #### Dynamic schema
 
