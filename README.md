@@ -212,7 +212,7 @@ const schema = {
 
 1) value
 
-Value of "repeatPassword" property.
+Value of `repeatPassword` property.
 ```js
 'the-safest-password-in-the-world' 
 ```
@@ -238,6 +238,7 @@ Object with `repeatPassword` property.
 
 4) fullObject
 
+The whole validated object.
 ```js
 {
     name: 'Dmitry',
