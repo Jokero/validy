@@ -82,7 +82,7 @@ describe('validateValue', function() {
         it('sync validator', function() {
             const greaterThanValidator = function(value, options) {
                 if (typeof value === 'number') {
-                    const minValue = typeof options === 'object' ? options.arg : options;
+                    const minValue = options.arg;
                     if (value <= minValue) {
                         return '%{value} is not greater than %{arg}';
                     }
@@ -110,7 +110,7 @@ describe('validateValue', function() {
                 return Promise.resolve('%{value} does not exist');
             };
 
-            validators.add('existsInDatabase', existsInDatabaseValidator, { simpleArgsFormat: true });
+            validators.add('existsInDatabase', existsInDatabaseValidator);
 
             const value = 1;
             const validatorsOptions = {
