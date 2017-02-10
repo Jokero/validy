@@ -345,7 +345,7 @@ validy.validators.add({
 If for some reasons you want to use rejected promise with validation error instead of fulfilled promise, specify `reject=true` option:
 
 ```js
-validy(object, schema)
+validy(object, schema, { reject: true })
     .then(() => {
         // no errors, everything is valid
     })
