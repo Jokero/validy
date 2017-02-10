@@ -164,7 +164,7 @@ validy.validators.add({ // this way you can add several validators at once
 Although in most cases you will have only two parameters in your own validators (`value` and `options`), some situations will require a bit knowledgeable validator.
 So, full signature of validator is:
 
-##### validator(value, options, object, fullObject, path)
+**validator(value, options, object, fullObject, path)**
 
 - `value` (any) - Validated value
 - `options` (Object) - Validator options
