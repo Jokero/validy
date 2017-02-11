@@ -272,10 +272,10 @@ validy.validators.add('russianOnly', function(value) {
 
 validy.validators.add({ // this way you can add several validators at once
     russianOnly: function(value) {
-        if (typeof value === 'string' && value !== '') {
-            if (!/^[а-яё]+$/i.test(value)) {
-                return 'must contain only Russian letters';
-            }
+        // empty string is valid value
+        // use "required" validator if this value must be specified 
+        if (typeof value === 'string' && value !== '' && !/^[а-яё]+$/i.test(value)) {
+            return 'must contain only Russian letters';
         }
     },
     
@@ -301,13 +301,11 @@ And then just use it as any other validator:
 Almost the same as synchronous validator, just return fulfilled promise:
 
 ```js
-const util = validy.validators.util;
-
 validy.validators.add({
     /**
      * Check using mongoose model that value exists in mongodb 
      * 
-     * @param {*}      value
+     * @param {string} value
      * @param {Object} options
      * @param {Object}   options.model - Mongoose model
      * @param {string}   [options.field] - Which field to use for search
@@ -315,7 +313,7 @@ validy.validators.add({
      * @returns {Promise}
      */
     exists: function(value, options) {
-        if (!util.exists(value)) { // if value is empty, just return fulfilled promise without argument
+        if (typeof value !== 'string' || value === '') { 
             return Promise.resolve();
         }
     
