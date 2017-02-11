@@ -260,15 +260,8 @@ The whole validated object.
 You can add your own validator:
 
 ```js
-const util = validy.validators.util;
-
 validy.validators.add('russianOnly', function(value) {
-    if (util.exists(value) && !(new RegExp(arg)).test(toString(value))) {
-        return 'Does not match the pattern %{arg}';
-    }
-    
-    
-    if (typeof value === 'string') {
+    if (typeof value === 'string' && value !== '') {
         if (!/^[а-яё]+$/i.test(value)) {
             return 'must contain only Russian letters';
         }
