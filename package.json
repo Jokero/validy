@@ -31,7 +31,7 @@
     "README.md"
   ],
   "dependencies": {
-    "common-validators": "^0.2.4"
+    "common-validators": "^0.2.5"
   },
   "devDependencies": {
     "babel-cli": "6.22.2",
