@@ -306,9 +306,15 @@ validy.validators.add({
      * @returns {Promise}
      */
     exists: function(value, options) {
-        if (typeof value !== 'string' || value === '') { 
+        const errorMessage = 'does not exist';
+        
+        if (value === '') { 
             return Promise.resolve();
         }
+        
+        if (typeof value !== 'string') {
+            return Promise.resolve(errorMessage);
+        } 
     
         const model = options.model;
         const field = options.field || '_id';
@@ -317,7 +323,7 @@ validy.validators.add({
             .then(count => {
                 if (!count) {
                     // if value is invalid, return fulfilled promise with validation error
-                    return Promise.resolve('does not exist');
+                    return Promise.resolve(errorMessage);
                 }
             });
     }
