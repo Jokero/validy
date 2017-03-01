@@ -373,7 +373,7 @@ validy(book, schema)
     })
 ```
 
-`errors` has flat structure:
+`errors` with flat structure:
 
 ```js
 {
