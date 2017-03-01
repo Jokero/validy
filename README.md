@@ -64,10 +64,10 @@ const schema = {
 
 validy(book, schema)
     .then(errors => {
-        if (errors) { // errors is plain object
-            // you have validation errors
-        } else { // errors is undefined
-            // no errors
+        if (errors) {
+            // you have validation errors ("errors" is plain object)
+        } else {
+            // no errors ("errors" is undefined)
         }
     })
     .catch(err => {
@@ -78,10 +78,10 @@ validy(book, schema)
 async function example() {
     try {
         const errors = await validy(book, schema);
-        if (errors) { // errors is plain object
-            // you have validation errors
-        } else { // errors is undefined
-            // no errors
+        if (errors) {
+            // you have validation errors ("errors" is plain object)
+        } else {
+            // no errors ("errors" is undefined)
         }
     } catch(err) {
         // application error (something went wrong)
