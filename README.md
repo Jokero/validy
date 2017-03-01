@@ -196,7 +196,7 @@ const schema = {
             $validate: {
                 required: true,
                 string: true,
-                validateSomething: 'someArgument' // <--- use it here
+                validateSomething: 'someArgument' // <--- and you want to use it here
             }
         }
     }
