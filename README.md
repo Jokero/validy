@@ -174,7 +174,7 @@ So, full signature of validator is:
 - `fullObject` (Object) - The whole validated object (object which was initially passed to `validy`)
 - `path` (string[]) - Path to property
 
-So imagine you created `validateSomething` validator:
+So imagine you wrote `validateSomething` validator:
 
 ```js
 const book = {
