@@ -272,7 +272,7 @@ validy.validators.add('russianLettersOnly', function(value) {
 validy.validators.add({ // this way you can add several validators at once
     russianLettersOnly: function(value) { /**/ },
     
-    anotherValidator: function() { /**/ }
+    anotherValidator: function(value) { /**/ }
 });
 ```
 
@@ -340,7 +340,7 @@ validy(book, schema)
     })
 ```
 
-In case of validation errors:
+If you have validation errors:
 
 ```js
 const book = {
@@ -385,6 +385,32 @@ validy(book, schema)
         error: 'string', 
         message: 'Must be a string'
     }]
+}
+```
+
+But you can use nested structure:
+
+```js
+validy(book, schema, { format: 'nested' })
+    .then(errors => {
+        console.log(errors);
+    })
+```
+
+`errors` with nested structure:
+
+```js
+{ 
+    name: [{ 
+        error: 'required', 
+        message: 'Is required' 
+    } ],
+    author: { 
+        name: [{ 
+            error: 'string', 
+            message: 'Must be a string'
+        }]
+    }
 }
 ```
 
