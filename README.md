@@ -250,13 +250,19 @@ The whole validated object (`book` object).
 
 ##### Synchronous validator
 
-You can add your own validator:
+Example:
 
 ```js
-validy.validators.add('russianOnly', function(value) {
-    // empty string is valid value
-    // use "required" validator if this value must be specified 
-    if (typeof value === 'string' && value !== '' && !/^[а-яё]+$/i.test(value)) {
+validy.validators.add('russianLettersOnly', function(value) {
+    // it's ok to consider empty value as valid value
+    // use "required" validator when this value must not be empty
+    if (value === '') {
+        // if value is valid just return nothing or falsy value 
+        return;
+    }
+    
+    if (typeof value !== 'string' || !/^[а-яё]+$/i.test(value)) {
+        // when value is invalid, return string with error
         return 'must contain only Russian letters';
     }
 });
@@ -264,11 +270,7 @@ validy.validators.add('russianOnly', function(value) {
 // or
 
 validy.validators.add({ // this way you can add several validators at once
-    russianOnly: function(value) {
-        if (typeof value === 'string' && value !== '' && !/^[а-яё]+$/i.test(value)) {
-            return 'must contain only Russian letters';
-        }
-    },
+    russianLettersOnly: function(value) { /**/ },
     
     anotherValidator: function() { /**/ }
 });
@@ -281,7 +283,7 @@ And then just use it as any other validator:
     name: {
         $validate: {
             // validator will be called only if its config is not equal to false/null/undefined 
-            russianOnly: true
+            russianLettersOnly: true
         }
     }
 }
