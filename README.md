@@ -331,6 +331,63 @@ validy.validators.add({
 ```
 #### Error format
 
+If there are no validation errors `validy` returns `undefined` as fulfillment value:
+
+```js
+validy(book, schema)
+    .then(errors => {
+        console.log(errors); // undefined
+    })
+```
+
+In case of validation errors:
+
+```js
+const book = {
+    name: '', // empty
+    author: {
+        name: 123456789 // not string
+    }
+};
+
+const schema = {
+    name: {
+        $validate: {
+            required: true,
+            string: true
+        }
+    },
+    author: {
+        name: {
+            $validate: {
+                required: true,
+                string: true
+            }
+        }
+    }
+};
+
+validy(book, schema)
+    .then(errors => {
+        console.log(errors);
+    })
+```
+
+`errors` has flat structure:
+
+```js
+{
+    name: [{ // errors are always placed in array
+        error: 'required', // validator name
+        message: 'Is required' // error message
+    }],
+    'author.name': [{
+        error: 'string', 
+        message: 'Must be a string'
+    }]
+}
+```
+
 ### Examples
 
 #### Return rejected promise instead of fulfilled

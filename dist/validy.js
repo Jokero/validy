@@ -152,8 +152,6 @@ module.exports = function (object, schema, fullObject, path) {
 },{"./validateProperty":6}],6:[function(require,module,exports){
 'use strict';
 
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
-
 var validateValue = require('./validateValue');
 
 /**
@@ -182,29 +180,21 @@ module.exports = function (value, schema, object, fullObject, path) {
         var validateObject = require('./validateObject');
 
         if (schema.$items || schema[0]) {
-            var _ret = function () {
-                if (!(value instanceof Array)) {
-                    return {
-                        v: Promise.resolve([{
-                            error: 'array',
-                            message: 'must be an array'
-                        }])
-                    };
-                }
+            if (!(value instanceof Array)) {
+                return Promise.resolve([{
+                    error: 'array',
+                    message: 'must be an array'
+                }]);
+            }
 
-                var propertiesSchema = {};
-                var itemSchema = schema.$items || schema[0];
+            var propertiesSchema = {};
+            var itemSchema = schema.$items || schema[0];
 
-                value.forEach(function (item, index) {
-                    return propertiesSchema[index] = itemSchema;
-                });
+            value.forEach(function (item, index) {
+                return propertiesSchema[index] = itemSchema;
+            });
 
-                return {
-                    v: validateObject(value, propertiesSchema, fullObject, path)
-                };
-            }();
-
-            if ((typeof _ret === 'undefined' ? 'undefined' : _typeof(_ret)) === "object") return _ret.v;
+            return validateObject(value, propertiesSchema, fullObject, path);
         }
 
         if (Object.keys(schema).some(function (propertyName) {
@@ -331,6 +321,8 @@ module.exports = ValidationError;
 'use strict';
 
 var validators = require('common-validators');
+
+validators.oneOptionsArg = true;
 
 var originalAdd = validators.add;
 validators.add = function (validatorName, validator) {
@@ -543,8 +535,8 @@ var validators = {
     },
 
     //Size
-    maxSize: function maxSize(value, arg) {
-        var valueSize = byteLength(value);
+    maxSize: function maxSize(value, arg, options) {
+        var valueSize = byteLength(value, options);
 
         if (exists(value) && valueSize > arg) {
             return {
@@ -554,8 +546,8 @@ var validators = {
         }
     },
 
-    minSize: function minSize(value, arg) {
-        var valueSize = byteLength(value);
+    minSize: function minSize(value, arg, options) {
+        var valueSize = byteLength(value, options);
 
         if (exists(value) && valueSize < arg) {
             return {
@@ -565,8 +557,8 @@ var validators = {
         }
     },
 
-    equalSize: function equalSize(value, arg) {
-        var valueSize = byteLength(value);
+    equalSize: function equalSize(value, arg, options) {
+        var valueSize = byteLength(value, options);
 
         if (exists(value) && valueSize !== arg) {
             return {
@@ -577,7 +569,7 @@ var validators = {
     },
 
     rangeSize: function rangeSize(value, options) {
-        var valueSize = byteLength(value);
+        var valueSize = byteLength(value, options);
 
         if (exists(value)) {
             if (valueSize < options.from) {
@@ -838,6 +830,15 @@ var validators = {
             return 'File size must be less or equal %{arg} bytes';
         }
     },
+    equalFileSize: function equalFileSize(files, arg, options) {
+        files = toArray(options.files || files);
+
+        if (exists(files) && !files.every(function (file) {
+            return toNumber(file.size) === arg;
+        })) {
+            return 'File size must be equal %{arg} bytes';
+        }
+    },
     minFileSizeAll: function minFileSizeAll(files, arg, options) {
         files = toArray(options.files || files);
 
@@ -854,6 +855,15 @@ var validators = {
             return toNumber(prev.size || prev) + toNumber(curr.size);
         }) <= arg)) {
             return 'Total files size must be less or equal %{arg} bytes';
+        }
+    },
+    equalFileSizeAll: function equalFileSizeAll(files, arg, options) {
+        files = toArray(options.files || files);
+
+        if (exists(files) && !(files.reduce(function (prev, curr) {
+            return toNumber(prev.size || prev) + toNumber(curr.size);
+        }) === arg)) {
+            return 'Total files size must be equal %{arg} bytes';
         }
     },
     minFileNameLength: function minFileNameLength(files, arg, options) {
@@ -1112,8 +1122,11 @@ function toObject(value) {
     return isObject(value) ? value : {};
 }
 
-function byteLength(str) {
-    str = str ? typeof str === 'string' ? str : JSON.stringify(str) : '';
+function byteLength(str, options) {
+    //Note: Node.js has Buffer.byteLength()
+    var stringify = options && typeof options.stringify === 'function' ? options.stringify : JSON.stringify;
+
+    str = str != null ? typeof str === 'string' ? str : stringify(str) : '';
     // returns the byte length of an utf8 string
     var s = str.length;
     for (var i = str.length - 1; i >= 0; i--) {
@@ -1154,6 +1167,7 @@ var EXCEPTION_HANDLER = 'exceptionHandler';
 var ERROR_FORMAT = 'errorFormat';
 var MESSAGE = 'message';
 var SIMPLE_ARGS_FORMAT = 'simpleArgsFormat';
+var ONE_OPTIONS_ARG = 'oneOptionsArg';
 var ARG = 'arg';
 
 /**
@@ -1290,7 +1304,8 @@ function isPlainObject(value) {
  * @param {Function}          [formatStr] - for format message strings with patterns
  * @param {Function}          [resultHandler] - handle result of validation
  * @param {Function|String}   [exceptionHandler] - handle JS exceptions
- * @param {String}            [simpleArgsFormat] - don't map arg to options.arg or vice versa
+ * @param {String}            [simpleArgsFormat] - any non object argument will be transformed to the `{arg: <argument>}`
+ * @param {String}            [oneOptionsArg] - ignore second options argument
  * @param {String}            [arg] - name of compared value
  * @param {Object}            [util] - reserved for validator's libraries helpers
  *
@@ -1303,7 +1318,8 @@ function Validators(params) {
         resultHandler: hiddenPropertySettings,
         exceptionHandler: hiddenPropertySettings,
         arg: hiddenPropertySettings,
-        ignoreOptionsAfterArg: hiddenPropertySettings,
+        simpleArgsFormat: hiddenPropertySettings,
+        oneOptionsArg: hiddenPropertySettings,
         util: hiddenPropertySettings
     });
 
@@ -1346,14 +1362,18 @@ function addValidator(name, validator, params) {
             var arg2 = arguments[2];
             var _this2 = this && this._this || _this;
             var isSimpleArgsFormat = _this2[name][SIMPLE_ARGS_FORMAT] || _this2[SIMPLE_ARGS_FORMAT];
-            var options = !isSimpleArgsFormat && isPlainObject(arg2) ? arg2 : {};
+            var isOneOptionsArg = _this2[name][ONE_OPTIONS_ARG] || _this2[ONE_OPTIONS_ARG];
+            var options = !isOneOptionsArg && isPlainObject(arg2) ? arg2 : {};
 
             if (arg1 != null && typeof arg1 !== 'boolean') {
-                if (isPlainObject(arg1) || isSimpleArgsFormat) {
+                if (isPlainObject(arg1)) {
                     options = arg1;
                 } else {
                     options[_this2[name][ARG] || _this2[ARG]] = arg1;
-                    args.shift();
+
+                    if (!isSimpleArgsFormat) {
+                        args.shift();
+                    }
                 }
             }
 

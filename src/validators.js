@@ -2,6 +2,8 @@
 
 const validators = require('common-validators');
 
+validators.oneOptionsArg = true;
+
 const originalAdd = validators.add;
 validators.add = function(validatorName, validator) {
     if (validatorName instanceof Object) {
