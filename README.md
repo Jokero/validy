@@ -48,13 +48,15 @@ const book = { // object to validate
 const schema = {
     name: {
         $validate: {
-            required: true
+            required: true,
+            string: true
         }
     },
-    author: {
+    author: { // you can omit check that "author" value is object, it will be done by validy internally 
         name: {
             $validate: {
-                required: true
+                required: true,
+                string: true
             }
         }
     }
@@ -62,9 +64,9 @@ const schema = {
 
 validy(book, schema)
     .then(errors => {
-        if (errors) {
+        if (errors) { // errors is plain object
             // you have validation errors
-        } else {
+        } else { // errors is undefined
             // no errors
         }
     })
@@ -76,9 +78,9 @@ validy(book, schema)
 async function example() {
     try {
         const errors = await validy(book, schema);
-        if (errors) {
+        if (errors) { // errors is plain object
             // you have validation errors
-        } else {
+        } else { // errors is undefined
             // no errors
         }
     } catch(err) {
@@ -172,14 +174,13 @@ So, full signature of validator is:
 - `fullObject` (Object) - The whole validated object (object which was initially passed to `validy`)
 - `path` (string[]) - Path to property
 
-Example:
+So imagine you created `validateSomething` validator:
 
 ```js
-const user = { // object to validate
-    name: 'Dmitry',
-    credentials: {
-        password: 'the-safest-password-in-the-world',
-        repeatPassword: 'the-safest-password-in-the-world'
+const book = {
+    name: 'The Adventures of Tom Sawyer',
+    author: {
+        name: 'Mark Twain'
     }
 };
 
@@ -190,31 +191,25 @@ const schema = {
             string: true
         }
     },
-    credentials: {
-        password: {
+    author: { 
+        name: {
             $validate: {
                 required: true,
                 string: true,
-            }
-        },
-        repeatPassword: {
-            $validate: {
-                required: true,
-                string: true,
-                confirm: 'password'
+                validateSomething: 'someArgument' // <--- use it here
             }
         }
     }
 };
 ```
 
-`confirm` validator will be called with the following arguments:
+`validateSomething` validator will be called with the following arguments:
 
 1) value
 
-Value of `repeatPassword` property.
+Value of `author.name` property.
 ```js
-'the-safest-password-in-the-world' 
+'Mark Twain' 
 ```
 
 2) options
@@ -222,29 +217,27 @@ Value of `repeatPassword` property.
 When you use non-object value as validator options it will be wrapped in object with `arg` property.
 ```js
 {
-    arg: 'password'
+    arg: 'someArgument'
 }
 ```
 
 3) object
 
-Object with `repeatPassword` property.
+Object with `name` property (`author` object).
 ```js
 {
-    password: 'the-safest-password-in-the-world',
-    repeatPassword: 'the-safest-password-in-the-world'
+    name: 'Mark Twain'
 }
 ```
 
 4) fullObject
 
-The whole validated object.
+The whole validated object (`book` object).
 ```js
 {
-    name: 'Dmitry',
-    credentials: {
-        password: 'the-safest-password-in-the-world',
-        repeatPassword: 'the-safest-password-in-the-world'
+    name: 'The Adventures of Tom Sawyer',
+    author: {
+        name: 'Mark Twain'
     }
 }
 ```
@@ -252,7 +245,7 @@ The whole validated object.
 5) path
 
 ```js
-['credentials', 'repeatPassword']
+['author', 'name']
 ```
 
 ##### Synchronous validator
@@ -261,10 +254,10 @@ You can add your own validator:
 
 ```js
 validy.validators.add('russianOnly', function(value) {
-    if (typeof value === 'string' && value !== '') {
-        if (!/^[а-яё]+$/i.test(value)) {
-            return 'must contain only Russian letters';
-        }
+    // empty string is valid value
+    // use "required" validator if this value must be specified 
+    if (typeof value === 'string' && value !== '' && !/^[а-яё]+$/i.test(value)) {
+        return 'must contain only Russian letters';
     }
 });
 
@@ -272,8 +265,6 @@ validy.validators.add('russianOnly', function(value) {
 
 validy.validators.add({ // this way you can add several validators at once
     russianOnly: function(value) {
-        // empty string is valid value
-        // use "required" validator if this value must be specified 
         if (typeof value === 'string' && value !== '' && !/^[а-яё]+$/i.test(value)) {
             return 'must contain only Russian letters';
         }
@@ -352,7 +343,9 @@ validy(object, schema, { reject: true })
     });
 ```
 
-#### Dynamic schema
+#### Dynamic property schema
+#### Dynamic validators options
+#### Dynamic validator options
 
 ```js
 ```
