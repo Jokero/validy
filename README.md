@@ -7,6 +7,30 @@ Declarative validation with async validators support
 
 **Note:** This module works in browsers and Node.js >= 6.0.
 
+## Table of Contents
+
+- [Installation](#installation)
+  - [Node.js](#nodejs)
+  - [Browser](#browser)
+- [Overview](#overview)
+- [Usage](#usage)
+  - [validy(object, schema, [options])](#validyobject-schema-options)
+    - [Parameters](#parameters)
+    - [Return value](#return-value)
+  - [Validators](#validators)
+    - [Built-in validators](#built-in-validators)
+    - [Custom validator](#custom-validator)
+      - [Synchronous validator](#synchronous-validator)
+      - [Asynchronous validator](#asynchronous-validator)
+  - [Error format](#error-format)
+  - [Return value](#return-value-1)
+  - [Dynamic property schema](#dynamic-property-schema)
+  - [Dynamic validators options](#dynamic-validators-options)
+  - [Dynamic validator options](#dynamic-validator-options)
+- [Build](#build)
+- [Tests](#tests)
+- [License](#license)
+
 ## Installation
 
 ```sh
@@ -329,7 +353,7 @@ validy.validators.add({
     }
 });
 ```
-#### Error format
+### Error format
 
 If there are no validation errors `validy` returns `undefined` as fulfillment value:
 
@@ -414,11 +438,10 @@ validy(book, schema, { format: 'nested' })
 }
 ```
 
-### Examples
+### Return value 
 
-#### Return rejected promise instead of fulfilled
-
-If for some reasons you want to use rejected promise with validation error instead of fulfilled promise, specify `reject=true` option:
+By default `validy` returns fulfilled promise when validated object is not valid.
+If for some reasons you want to use rejected promise with validation error instead of fulfilled promise, specify `reject` option:
 
 ```js
 validy(object, schema, { reject: true })
@@ -434,9 +457,9 @@ validy(object, schema, { reject: true })
     });
 ```
 
-#### Dynamic property schema
-#### Dynamic validators options
-#### Dynamic validator options
+### Dynamic property schema
+### Dynamic validators options
+### Dynamic validator options
 
 ```js
 ```
