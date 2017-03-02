@@ -66,7 +66,17 @@ const book = { // object to validate
     name: 'The Adventures of Tom Sawyer',
     author: {
         name: 'Mark Twain'
-    }
+    },
+    reviews: [
+        {
+            author: 'Leo Tolstoy',
+            text: 'Great novel'
+        },
+        {
+            author: 'Fyodor Dostoyevsky',
+            text: 'Very interesting'
+        }
+    ]
 };
 
 const schema = {
@@ -83,7 +93,21 @@ const schema = {
                 string: true
             }
         }
-    }
+    },
+    reviews: [{ // define schema for array items
+        author: {
+            $validate: {
+                required: true,
+                string: true
+            }
+        },
+        text: {
+            $validate: {
+                required: true,
+                string: true
+            }
+        }
+    }]
 };
 
 validy(book, schema)
