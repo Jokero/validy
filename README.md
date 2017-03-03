@@ -548,7 +548,7 @@ const schema = {
 
 const alternativeSchema = {
     products: {
-        $validate: {
+        $validate: { // validate also "products" before items validation
             required: true,
             array: true
         },
