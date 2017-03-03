@@ -569,7 +569,7 @@ const alternativeSchema = {
 
 You can do similar things with `$validate` and specific validator:
 
-```
+```js
 const bookSchema = {
     author: {
         name: {
@@ -581,7 +581,7 @@ const bookSchema = {
                 return {
                     required: function(name, author, book, pathToName) {
                         // implement your custom logic
-                        // validation will only run if you return something different from undefined, null and false
+                        // return undefined, null or false if you want skip validation
                     },
                     string: true
                 };
