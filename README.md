@@ -452,7 +452,7 @@ validy(book, schema, { format: 'nested' })
     name: [{ 
         error: 'required', 
         message: 'Is required' 
-    } ],
+    }],
     author: { 
         name: [{ 
             error: 'string', 
@@ -481,7 +481,95 @@ validy(object, schema, { reject: true })
     });
 ```
 
-### Dynamic property schema
+### Dynamic schema
+
+Sometimes you may need a way to validate some property differently depending on specific conditions.
+Example:
+
+```js
+const order = {
+    products: [
+        {
+            type: 'book',
+            name: 'The Adventures of Tom Sawyer',
+            count: 1
+        },
+        {
+            type: 'sugar',
+            weight: 3000
+        }
+    ]
+};
+
+const productsSchemas = {
+    book: {
+        name: {
+            $validate: {
+                required: true,
+                string: true
+            }
+        },
+        count: {
+            $validate: {
+                required: true,
+                integer: true,
+                min: 1
+            }
+        }
+    },
+
+    sugar: {
+        weight: {
+            $validate: {
+                required: true,
+                integer: true,
+                min: 1000
+            }
+        }
+    }
+};
+
+const schema = {
+    products: [(product/*, products, order, path*/) => {
+        const productSchema = productsSchemas[product.type] || {};
+        return Object.assign({}, productSchema, {
+            type: {
+                $validate: {
+                    required: true,
+                    string: true,
+                    inclusion: Object.keys(productsSchemas)
+                }
+            }
+        });
+    }]
+};
+
+// or you can do like this
+
+const alternativeSchema = {
+    products: {
+        $validate: {
+            required: true,
+            array: true
+        },
+
+        $items: (product/*, products, order, path*/) => {
+            const productSchema = productsSchemas[product.type] || {};
+            return Object.assign({}, productSchema, {
+                type: {
+                    $validate: {
+                        required: true,
+                        string: true,
+                        inclusion: Object.keys(productsSchemas)
+                    }
+                }
+            });
+        }
+    }
+};
+
+```
+
 ### Dynamic validators options
 ### Dynamic validator options
 
