@@ -484,7 +484,7 @@ validy(object, schema, { reject: true })
 ### Dynamic schema
 
 Sometimes you may need a way to validate some property differently depending on specific conditions.
-Example:
+Example with order of various products:
 
 ```js
 const order = {
