@@ -24,9 +24,7 @@ Declarative validation with async validators support
       - [Asynchronous validator](#asynchronous-validator)
   - [Error format](#error-format)
   - [Return value](#return-value-1)
-  - [Dynamic property schema](#dynamic-property-schema)
-  - [Dynamic validators options](#dynamic-validators-options)
-  - [Dynamic validator options](#dynamic-validator-options)
+  - [Dynamic schema](#dynamic-schema)
 - [Build](#build)
 - [Tests](#tests)
 - [License](#license)
@@ -530,7 +528,7 @@ const productsSchemas = {
 };
 
 const schema = {
-    products: [(product/*, products, order, path*/) => {
+    products: [(product/*, products, order, pathToItem*/) => {
         const productSchema = productsSchemas[product.type] || {};
         return Object.assign({}, productSchema, {
             type: {
@@ -553,7 +551,7 @@ const alternativeSchema = {
             array: true
         },
 
-        $items: (product/*, products, order, path*/) => {
+        $items: (product/*, products, order, pathToItem*/) => {
             const productSchema = productsSchemas[product.type] || {};
             return Object.assign({}, productSchema, {
                 type: {
@@ -567,13 +565,30 @@ const alternativeSchema = {
         }
     }
 };
-
 ```
 
-### Dynamic validators options
-### Dynamic validator options
+You can do similar things with `$validate` and specific validator:
 
-```js
+```
+const bookSchema = {
+    author: {
+        name: {
+            $validate: function(name, author, book, pathToName) {
+                // implement your custom logic
+                
+                // validation will only run if you return object
+                // so you can return null for example to skip validation 
+                return {
+                    required: function(name, author, book, pathToName) {
+                        // implement your custom logic
+                        // validation will only run if you return something different from undefined, null and false
+                    },
+                    string: true
+                };
+            }
+        }
+    }
+};
 ```
 
 ## Build
