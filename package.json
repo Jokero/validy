@@ -28,7 +28,8 @@
     "dist/",
     "lib/",
     "LICENSE",
-    "README.md"
+    "README.md",
+    "runkitExample.js"
   ],
   "dependencies": {
     "common-validators": "^0.2.6"
