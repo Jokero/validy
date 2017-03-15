@@ -52,5 +52,6 @@
     "browserify": "browserify ./lib/validy.js --standalone validy --outfile dist/validy.js",
     "minify": "uglifyjs dist/validy.js --output dist/validy.min.js",
     "build": "npm run babelify && npm run browserify && npm run minify"
-  }
+  },
+  "runkitExampleFilename": "runkitExample.js"
 }

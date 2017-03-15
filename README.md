@@ -9,6 +9,7 @@ Declarative validation with async validators support
 
 ## Table of Contents
 
+- [Demo](#demo)
 - [Installation](#installation)
   - [Node.js](#nodejs)
   - [Browser](#browser)
@@ -28,6 +29,10 @@ Declarative validation with async validators support
 - [Build](#build)
 - [Tests](#tests)
 - [License](#license)
+
+## Demo
+
+Try [demo](https://runkit.com/npm/validy) on RunKit.
 
 ## Installation
 
@@ -551,7 +556,7 @@ const alternativeSchema = {
             array: true
         },
 
-        $items: (product/*, products, order, pathToItem*/) => {
+        $items: function(product/*, products, order, pathToItem*/) {
             const productSchema = productsSchemas[product.type] || {};
             return Object.assign({}, productSchema, {
                 type: {
