@@ -27,9 +27,9 @@
   "files": [
     "dist/",
     "lib/",
+    "examples/",
     "LICENSE",
-    "README.md",
-    "runkitExample.js"
+    "README.md"
   ],
   "dependencies": {
     "common-validators": "^0.2.6"
@@ -54,5 +54,5 @@
     "minify": "uglifyjs dist/validy.js --output dist/validy.min.js",
     "build": "npm run babelify && npm run browserify && npm run minify"
   },
-  "runkitExampleFilename": "runkitExample.js"
+  "runkitExampleFilename": "examples/index.js"
 }
