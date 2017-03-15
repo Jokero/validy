@@ -1,7 +1,7 @@
 {
   "name": "validy",
   "description": "Declarative validation with async validators support",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "author": {
     "name": "Dmitry Kirilyuk",
     "email": "gk.joker@gmail.com"
