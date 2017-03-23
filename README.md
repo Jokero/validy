@@ -1,11 +1,12 @@
 # validy
 
-Declarative validation with async validators support
+Declarative validation with async validators support.
+If you also want to work with filters and default values, take a look at [transformer-chain](https://github.com/Jokero/transformer-chain)
 
 [![NPM version](https://img.shields.io/npm/v/validy.svg)](https://npmjs.org/package/validy)
 [![Build status](https://img.shields.io/travis/Jokero/validy.svg)](https://travis-ci.org/Jokero/validy)
 
-**Note:** This module works in browsers and Node.js >= 6.0.
+**Note:** This module works in browsers and Node.js >= 4.0. Use polyfill for Internet Explorer
 
 ## Table of Contents
 
@@ -534,7 +535,7 @@ const productsSchemas = {
 
 const schema = {
     products: [(product/*, products, order, pathToItem*/) => {
-        const productSchema = productsSchemas[product.type] || {};
+        const productSchema = productsSchemas[product.type];
         return Object.assign({}, productSchema, {
             type: {
                 $validate: {

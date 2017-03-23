@@ -1141,7 +1141,7 @@ module.exports = {
     validators: validators,
     util: util
 };
-},{"normalize-date":14}],12:[function(require,module,exports){
+},{"normalize-date":13}],12:[function(require,module,exports){
 'use strict';
 
 var validatorsLibrary = require('./common-validators-library');
@@ -1150,7 +1150,61 @@ var validators = require('validators-constructor')();
 validators.util = validatorsLibrary.util;
 
 module.exports = validators.add(validatorsLibrary.validators);
-},{"./common-validators-library":11,"validators-constructor":13}],13:[function(require,module,exports){
+},{"./common-validators-library":11,"validators-constructor":14}],13:[function(require,module,exports){
+'use strict';
+
+function setTimezoneOffset(date) {
+    date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+}
+
+function normalizeDateTime(date) {
+    if (!date) {
+        return new Date(date);
+    }
+
+    if (arguments.length > 1) {
+        date = Array.prototype.slice.call(arguments);
+    }
+
+    if (Array.isArray(date)) {
+        date = new (Function.prototype.bind.apply(Date, [null].concat(date)))();
+    }
+
+    var jsDate = new Date(date);
+
+    if (date === Object(date)) {
+        //Native or Moment.js date
+        var momentBaseDate = date.creationData && date.creationData().input;
+
+        if (!(momentBaseDate && (typeof momentBaseDate === 'number' || typeof momentBaseDate === 'string' && /:.+Z|GMT|[+-]\d\d:\d\d/.test(momentBaseDate)))) {
+            setTimezoneOffset(jsDate); //Any data except moment.js date from timestamp or UTC string (UTC ISO format have to contains time)
+        }
+
+        return jsDate;
+    }
+
+    if (!isNaN(jsDate) && typeof date === 'string') {
+        //ISO or RFC
+        if (date.match(/Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec/) && date.indexOf('GMT') === -1) {
+            //RFC without GMT
+            setTimezoneOffset(jsDate);
+        }
+    } else {
+        //Timestamp (always in UTC)
+        jsDate = new Date(Number(String(date).split('.').join('')));
+    }
+
+    return jsDate;
+}
+
+function normalizeDate(date, options) {
+    date = normalizeDateTime(date);
+
+    return (options || {}).noTime ? new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()) : date;
+}
+
+module.exports = normalizeDate;
+},{}],14:[function(require,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
@@ -1189,7 +1243,7 @@ function validatorWrapper(validators, name, validator) {
         var arg = validatorObj[ARG] || validatorAliasObj[ARG] || validators[ARG];
         var isSimpleArgsFormat = validatorObj[SIMPLE_ARGS_FORMAT] || validatorAliasObj[SIMPLE_ARGS_FORMAT] || validators[SIMPLE_ARGS_FORMAT];
 
-        options = Object.assign({}, validatorObj.defaultOptions, validatorAliasObj.defaultOptions, options);
+        options = assign({}, validatorObj.defaultOptions, validatorAliasObj.defaultOptions, options);
 
         if (typeof options.parse === 'function') {
             value = options.parse(value);
@@ -1223,7 +1277,7 @@ function validatorWrapper(validators, name, validator) {
                         error = message;
                     }
 
-                    var formattedErrorMessage = validators.formatMessage(error, Object.assign({ validator: alias || name, value: value }, errorObj, options));
+                    var formattedErrorMessage = validators.formatMessage(error, assign({ validator: alias || name, value: value }, errorObj, options));
                     var format = validatorObj[ERROR_FORMAT] || validatorAliasObj[ERROR_FORMAT] || validators[ERROR_FORMAT];
 
                     if (format) {
@@ -1232,7 +1286,7 @@ function validatorWrapper(validators, name, validator) {
                         }
 
                         if (format.$options) {
-                            format = Object.assign({}, format);
+                            format = assign({}, format);
 
                             Object.keys(options).forEach(function (key) {
                                 if (!MESSAGE_REGEXP.test(key) && typeof options[key] !== 'function') {
@@ -1243,12 +1297,12 @@ function validatorWrapper(validators, name, validator) {
                         delete format.$options;
 
                         if (format.$origin) {
-                            format = Object.assign({}, format, formattedErrorMessage);
+                            format = assign({}, format, formattedErrorMessage);
                         }
                         delete format.$origin;
 
                         return {
-                            v: validators.formatMessage(format, Object.assign({ validator: alias || name, value: value }, options, formattedErrorMessage))
+                            v: validators.formatMessage(format, assign({ validator: alias || name, value: value }, options, formattedErrorMessage))
                         };
                     }
 
@@ -1297,6 +1351,22 @@ function isPlainObject(value) {
 }
 
 /**
+ * Extend objects
+ *
+ * @param {Object} first argument
+ * @param {Any} other arguments
+ *
+ * @returns {Object}
+ */
+function assign() {
+    for (var i = 1; i < arguments.length; i++) {
+        for (var k in arguments[i]) {
+            if (arguments[i].hasOwnProperty(k)) arguments[0][k] = arguments[i][k];
+        }
+    }return arguments[0];
+}
+
+/**
  * Validators constructor
  *
  * @param {Object}          [params]
@@ -1336,7 +1406,7 @@ function Validators(params) {
     this.arg = 'arg';
     this.util = {};
 
-    Object.assign(this, params);
+    assign(this, params);
 }
 
 /**
@@ -1389,7 +1459,7 @@ function addValidator(name, validator, params) {
 
                     case 'object':
                         validator = _this2[base[0]];
-                        options = Object.assign({}, options, base[1]);
+                        options = assign({}, options, base[1]);
                 }
 
                 var error = validator.apply(this, [value, options].concat(args));
@@ -1401,7 +1471,7 @@ function addValidator(name, validator, params) {
         };
     }
 
-    Object.assign(validate, params);
+    assign(validate, params);
 
     validate.curry = function () /*arg, options*/{
         var _arguments = arguments;
@@ -1470,59 +1540,5 @@ Validators.prototype.formatMessage = function (message, values) {
 module.exports = function (options) {
     return new Validators(options);
 };
-},{}],14:[function(require,module,exports){
-'use strict';
-
-function setTimezoneOffset(date) {
-    date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
-}
-
-function normalizeDateTime(date) {
-    if (!date) {
-        return new Date(date);
-    }
-
-    if (arguments.length > 1) {
-        date = Array.prototype.slice.call(arguments);
-    }
-
-    if (Array.isArray(date)) {
-        date = new (Function.prototype.bind.apply(Date, [null].concat(date)))();
-    }
-
-    var jsDate = new Date(date);
-
-    if (date === Object(date)) {
-        //Native or Moment.js date
-        var momentBaseDate = date.creationData && date.creationData().input;
-
-        if (!(momentBaseDate && (typeof momentBaseDate === 'number' || typeof momentBaseDate === 'string' && /:.+Z|GMT|[+-]\d\d:\d\d/.test(momentBaseDate)))) {
-            setTimezoneOffset(jsDate); //Any data except moment.js date from timestamp or UTC string (UTC ISO format have to contains time)
-        }
-
-        return jsDate;
-    }
-
-    if (!isNaN(jsDate) && typeof date === 'string') {
-        //ISO or RFC
-        if (date.match(/Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec/) && date.indexOf('GMT') === -1) {
-            //RFC without GMT
-            setTimezoneOffset(jsDate);
-        }
-    } else {
-        //Timestamp (always in UTC)
-        jsDate = new Date(Number(String(date).split('.').join('')));
-    }
-
-    return jsDate;
-}
-
-function normalizeDate(date, options) {
-    date = normalizeDateTime(date);
-
-    return (options || {}).noTime ? new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()) : date;
-}
-
-module.exports = normalizeDate;
 },{}]},{},[10])(10)
 });

@@ -21,7 +21,7 @@
     "async"
   ],
   "engines": {
-    "node": ">=6.0.0"
+    "node": ">=4.0.0"
   },
   "main": "./lib/validy.js",
   "files": [
@@ -32,7 +32,7 @@
     "README.md"
   ],
   "dependencies": {
-    "common-validators": "^0.2.6"
+    "common-validators": "^0.2.7"
   },
   "devDependencies": {
     "babel-cli": "6.22.2",
