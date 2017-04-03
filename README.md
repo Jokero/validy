@@ -6,7 +6,7 @@ If you also want to work with filters and default values, take a look at [transf
 [![NPM version](https://img.shields.io/npm/v/validy.svg)](https://npmjs.org/package/validy)
 [![Build status](https://img.shields.io/travis/Jokero/validy.svg)](https://travis-ci.org/Jokero/validy)
 
-**Note:** This module works in browsers and Node.js >= 4.0. Use polyfill for Internet Explorer
+**Note:** This module works in browsers and Node.js >= 4.0. Use `Object.assign` and `Promise` polyfills for Internet Explorer
 
 ## Table of Contents
 
@@ -90,7 +90,11 @@ const schema = {
             string: true
         }
     },
-    author: { // you can omit check that "author" value is object, it will be done by validy internally 
+    author: {
+        $validate: { // you can omit check that "author" value is object, it will be done internally 
+            required: true
+        },
+    
         name: {
             $validate: {
                 required: true,
@@ -164,7 +168,7 @@ async function example() {
 By default `validy` uses collection of simple and useful validators ([common-validators](https://github.com/tamtakoe/common-validators) module).
 
 **Note**:
-The basic principle of built-in validators is that many of them (except `required`, `notEmpty` and type validators `object`, `array`, ...) consider empty values as **valid values**.
+The basic principle of built-in validators is that most of them (except `required`, `notEmpty` and type validators `object`, `array`, ...) consider empty values as **valid values**.
 Empty values are:
 - `undefined`
 - `null`
@@ -181,7 +185,7 @@ Some of built-in validators:
 
 - **required (presence)** - validates that the value isn't `undefined`, `null`, `NaN`, empty or whitespace only string, empty array or object
 - **notEmpty** - like `required` but `undefined` is valid value. It is useful for PATCH requests
-- **object / array / string / number / integer / ...** - value is plain object, array, ...
+- **object / array / string / number / integer / ...** - value is plain object, array, etc. `undefined` is valid value
 - **max** - value is less than maximum
 - **min** - value is greater than minimum
 - **range** - value is in range
@@ -244,6 +248,10 @@ const schema = {
         }
     },
     author: { 
+        $validate: {
+            required: true
+        },
+        
         name: {
             $validate: {
                 required: true,
@@ -410,6 +418,10 @@ const schema = {
         }
     },
     author: {
+        $validate: {
+            required: true
+        },
+        
         name: {
             $validate: {
                 required: true,
@@ -425,7 +437,7 @@ validy(book, schema)
     })
 ```
 
-`errors` with flat structure:
+`errors` has flat structure by default:
 
 ```js
 {
@@ -548,7 +560,7 @@ const schema = {
     }]
 };
 
-// or you can do like this
+// or you can do like this (products is marked as required)
 
 const alternativeSchema = {
     products: {

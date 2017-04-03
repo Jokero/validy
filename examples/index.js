@@ -25,6 +25,10 @@ const schema = {
         }
     },
     author: {
+        $validate: {
+            required: true
+        },
+
         name: {
             $validate: {
                 required: true,

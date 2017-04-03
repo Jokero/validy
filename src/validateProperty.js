@@ -29,7 +29,7 @@ module.exports = function(value, schema, object, fullObject, path) {
 
         const validateObject = require('./validateObject');
 
-        if (schema.$items || schema[0]) {
+        if ((schema.$items || schema[0]) && value !== undefined) {
             if (!(value instanceof Array)) {
                 return Promise.resolve([{
                     error:   'array',
@@ -43,9 +43,7 @@ module.exports = function(value, schema, object, fullObject, path) {
             value.forEach((item, index) => propertiesSchema[index] = itemSchema);
 
             return validateObject(value, propertiesSchema, fullObject, path);
-        }
-
-        if (Object.keys(schema).some(propertyName => !propertyName.startsWith('$'))) {
+        } else if (Object.keys(schema).some(propertyName => !propertyName.startsWith('$')) && value !== undefined) {
             if (!(value instanceof Object)) {
                 return Promise.resolve([{
                     error:   'object',
