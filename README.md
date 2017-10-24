@@ -25,6 +25,7 @@ If you also want to work with filters and default values, take a look at [transf
       - [Synchronous validator](#synchronous-validator)
       - [Asynchronous validator](#asynchronous-validator)
   - [Error format](#error-format)
+  - [Error messages](#error-messages)
   - [Return value](#return-value-1)
   - [Dynamic schema](#dynamic-schema)
 - [Build](#build)
