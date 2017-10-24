@@ -478,6 +478,55 @@ validy(book, schema, { format: 'nested' })
 }
 ```
 
+### Error messages
+
+You can customize error message for specific property:
+
+```js
+const schema = {
+    url: {
+        $validate: {
+            url: { // instead of { url: true }
+                message: 'invalid url'
+            }
+        }
+    }
+};
+
+const object = {
+    url: 'not-url'
+};
+
+validy(object, schema)
+    .then(errors => {
+        console.log(errors); // { url: [ { error: 'url', message: 'invalid url' } ] }
+    });
+```
+
+Or set default message for a validator:
+
+```js
+validy.validators.url.defaultOptions = { message: 'bad url' };
+
+const schema = {
+    url: {
+        $validate: {
+            url: true
+        }
+    }
+};
+
+const object = {
+    url: 'not-url'
+};
+
+validy(object, schema)
+    .then(errors => {
+        console.log(errors); // { url: [ { error: 'url', message: 'bad url' } ] }
+    });
+
+```
+
 ### Return value 
 
 By default `validy` returns fulfilled promise when validated object is not valid.
