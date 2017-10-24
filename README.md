@@ -488,7 +488,7 @@ const schema = {
     url: {
         $validate: {
             url: { // instead of { url: true }
-                message: 'invalid url'
+                message: 'invalid url' // message can be either string or function returning string
             }
         }
     }
