@@ -1,7 +1,8 @@
 # validy
 
 Declarative validation with async validators support.
-If you also want to work with filters and default values, take a look at [transformer-chain](https://github.com/Jokero/transformer-chain)
+If you also want to work with filters and default values, take a look at [transformer-chain](https://github.com/Jokero/transformer-chain).
+You may be interested in express middleware ([express-request-parameters](https://github.com/Jokero/express-request-parameters)) useful for HTTP API.
 
 [![NPM version](https://img.shields.io/npm/v/validy.svg)](https://npmjs.org/package/validy)
 [![Build status](https://img.shields.io/travis/Jokero/validy.svg)](https://travis-ci.org/Jokero/validy)
